@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "releasecraft"
+version = "1.0.0"
+description = "Deterministic, evidence-driven source release preparation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Releasecraft contributors"}]
+dependencies = []
+
+[project.scripts]
+releasecraft = "releasecraft.cli:main"
+
+[project.gui-scripts]
+releasecraft-gui = "releasecraft.desktop:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+releasecraft = ["ui.html"]

@@ -1,0 +1,584 @@
+{
+  "claims": [
+    {
+      "commands": [
+        "install",
+        "tests"
+      ],
+      "description": "The release processing core and local web API satisfy the bundled positive and negative regression contracts"
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "python",
+        "-m",
+        "pip",
+        "install",
+        "--no-cache-dir",
+        "--no-deps",
+        "."
+      ],
+      "id": "install",
+      "timeout": 120
+    },
+    {
+      "argv": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests"
+      ],
+      "id": "tests",
+      "timeout": 120
+    }
+  ],
+  "files": [
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": ".gitattributes",
+      "sha256": "5100fa6e40f12ba6e8ed2cc72835931d21b0f19986be6ee9fef6769fc789c360",
+      "size": 70
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": ".github/workflows/tests.yml",
+      "sha256": "bedfc6539561d9a3656f7f0e2c4cc5f8cb9a15b077533180cb923b47c4d84f03",
+      "size": 955
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": ".gitignore",
+      "sha256": "43e532e9676fde819e84cf8d3f2816f73eef60cab5512a1beee437cec1f7769d",
+      "size": 70
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "CHANGELOG.md",
+      "sha256": "a9eda3620c7685db559d82f2376bef634d2d1d5b12e3975756590828508bb305",
+      "size": 1043
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "LICENSE",
+      "sha256": "f7e3e5df0002187f6d3b70c8de584541a0f9fcc72448bf661a0d389ac27c95b8",
+      "size": 1082
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "README.md",
+      "sha256": "ff466beee3095ae5f813ae5c751ab0afe7265c3e89da863fd656582e8e22ab24",
+      "size": 12652
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "README.zh-CN.md",
+      "sha256": "c7f75e14c59ec067b5fbde215eb780abdc136248ecc2ed12b89e9aa6b3c54c70",
+      "size": 7331
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/DEFAULTS.md",
+      "sha256": "1834456b7fb1ef4a0451b57bf9d1634bf05137239718033d8d96e6926ff62104",
+      "size": 9130
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/DESIGN.md",
+      "sha256": "86ffbb87420a4b8986d7ad2461f8a8809b457db07376c230c024850802fa470c",
+      "size": 5408
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/DESKTOP.md",
+      "sha256": "e8eb215d6acda0fe5677ee47b4ceb52c91f75d9b13a08093223b7be1cff5e948",
+      "size": 7606
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/DOWNLOADS.md",
+      "sha256": "d614f8fb652e43a38d7dddf521078aec4b9356595507b73f077e9f566b202cc8",
+      "size": 2872
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/POLICY.md",
+      "sha256": "84d49fb113e137be484ca155fcf3e920aec694f693c54b6254024454f612745b",
+      "size": 2640
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/RELEASING.md",
+      "sha256": "f79c6b3140d9f92ebc0fc289f00eb23bf78ebbef1c44545a37bbd66a1828f58d",
+      "size": 4346
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/RESEARCH.md",
+      "sha256": "027c414aad594b2e17a5fda099a4b22dfe5b53a5c072d1a54433815776a46403",
+      "size": 1914
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/SCAN_LIMITS.md",
+      "sha256": "146b25b72c297f31f4657f440d8767d3a243cef9d2be588d712e4b0c20c12389",
+      "size": 2655
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/VERIFICATION.md",
+      "sha256": "13c299133e72291103d08e179761116492ba2229a1024ee227148735ad864b4f",
+      "size": 4227
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/assets/banner.svg",
+      "sha256": "766a2a8b008a7e4a05c042fcfccca6e0fb877c53a963d1ae973e3d2fb3e0cbd5",
+      "size": 1181
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/assets/license.svg",
+      "sha256": "98b0842b98a88804f4726473b6b2b7c84106183245efbcb7987aa65671fbd715",
+      "size": 374
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/assets/local.svg",
+      "sha256": "b8d16f920d8d8fb3d8449a87dc1860b9799fe3d6d88e734d20c2a610a7b6996f",
+      "size": 390
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/assets/python.svg",
+      "sha256": "fadea5a03f2ca8de904c3dfd5b4943de9dc827f9c84dbde5999298dd332a8a1e",
+      "size": 376
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "docs/assets/version.svg",
+      "sha256": "33c8c9298cc12767d778e0f33c149d4ab8669892d23a208522fef7d337c5eac7",
+      "size": 378
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "examples/demo-policy.json",
+      "sha256": "9a80a38e8e5ea890a62d1e33ccabbf1fc82cf726465edd28a2f5494dedc8eeaa",
+      "size": 231
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "examples/demo/LICENSE",
+      "sha256": "f7e3e5df0002187f6d3b70c8de584541a0f9fcc72448bf661a0d389ac27c95b8",
+      "size": 1082
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "examples/demo/README.md",
+      "sha256": "278df458f691f058bb1915697c05296661c7303fc6c5c66e83ea2a24b5aa9846",
+      "size": 72
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "examples/demo/assets/values.json",
+      "sha256": "77c556d2766f40b12b032bc18b5f1e8be422b9acaac67f3a5a6ffafc490f3160",
+      "size": 22
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "examples/demo/main.py",
+      "sha256": "479bf860e8eecf488f4b320dc9b93029c8e11f4e2c77b259a5048282a640ac73",
+      "size": 240
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "packaging/Releasecraft.pyw",
+      "sha256": "b948a15e59122b33c9e113845cf678937a1ec3944a593b3cb65baa507677c76b",
+      "size": 5880
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "packaging/install.py",
+      "sha256": "0cbb82d05a7ffaabc0ab001ad448b55da046fcea35548e0263da0dc1ca222c9d",
+      "size": 1496
+    },
+    {
+      "classification": "source",
+      "mode": 493,
+      "path": "packaging/linux/install.sh",
+      "sha256": "42c7bf49ed5873f0af81ca32a31f81c535cba0c54f6a87ec60dd6ce53802a7db",
+      "size": 100
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "packaging/linux/releasecraft-gui.sh",
+      "sha256": "f6043e98ba69f50edbd6501181de748bc0930d1996fc0a4c6eeff9bb800ae15c",
+      "size": 475
+    },
+    {
+      "classification": "source",
+      "mode": 493,
+      "path": "packaging/linux/releasecraft.sh",
+      "sha256": "b625b242560ca4fd62382c1f8a08e4e99a6cc541296feb8984a26372376652d1",
+      "size": 225
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "packaging/windows/Start Releasecraft.cmd",
+      "sha256": "529fe691cf6b5b705cd1b8750ac90db99ed318585f9e9d2bd126c7e53922143b",
+      "size": 384
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "packaging/windows/install.cmd",
+      "sha256": "ab0bb85875b4a7b1d5eacdd72510bd60986b72c6f0d614bae2968085174a2257",
+      "size": 174
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "packaging/windows/releasecraft.cmd",
+      "sha256": "8b52d283f516bb3a8c5b4eaa900be985efde078289720c5ffc1cf66e3a0669f1",
+      "size": 182
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "pyproject.toml",
+      "sha256": "3b015fa9b927ef9c6fedb80a489d01341117674ea2d7b67efed017ca076f2770",
+      "size": 586
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "releasecraft-policy.json",
+      "sha256": "4cbbfc3d29bcb6ce0821fe437c4f5a81b40de8ee041232287e396d55c5cb3520",
+      "size": 9672
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "scripts/build_distributions.py",
+      "sha256": "76a9fc510a516c1e31517bb2ef285659abad4be7e7d1ef68929295f496ee978e",
+      "size": 5667
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "scripts/check_distribution.py",
+      "sha256": "70e203cc475733c32bf77f1dfd3521738fa071c88ed13233b0cbcc2d7f8b3214",
+      "size": 6104
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/__init__.py",
+      "sha256": "80990ceb173ddd7df5f2cdc026d34102351390c007f579a55ff798720dc7c8e4",
+      "size": 71
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/__main__.py",
+      "sha256": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
+      "size": 48
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/analyze.py",
+      "sha256": "05f6aa01ef27f3101ee3e026340885fee88f89a372641e3d7a4c3d37d110744d",
+      "size": 56139
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/build.py",
+      "sha256": "99a46dc652ee808618ae62215d2931fc9f853978bcee5bec42c8043896c99d85",
+      "size": 13500
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/cli.py",
+      "sha256": "8d5ad3215ddbcf18a3b20d48f78576fa59a2af309ca6c89066366388367da971",
+      "size": 4265
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/desktop.py",
+      "sha256": "fd6067f67810724b0ab4fefbd6ca39a751d5be9585900a36e678bfa1911519a2",
+      "size": 23727
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/diagnostics.py",
+      "sha256": "5a27e66b5bd6188ec37c00adee2c67903a9861590a44a66bbf7df6f8c7baea1d",
+      "size": 3833
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/directory.py",
+      "sha256": "a1557cdf6c152b657a1db233d1678a0122f7dc0e193e5536c2041121f90c07a5",
+      "size": 14190
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/documentation.py",
+      "sha256": "1c36e60e7600076eb825948c8ceb6c4580d21574d7edee9346083b2c4a8ca3d6",
+      "size": 2929
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/i18n.py",
+      "sha256": "64b4040ab6aea8400deeba69eace16e85a9f72cef87f1aaa90fbf8e4203c5fa6",
+      "size": 16643
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/managed.py",
+      "sha256": "a09787d71b929e35a84848bd7226b5ea691a05ea6433b5e21eafd810ffb34db6",
+      "size": 10720
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/native.py",
+      "sha256": "c001f63b37c56a4c70241f0b2cc6a28bda97143acae253b9c24fa33eea3684dd",
+      "size": 6094
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/operation.py",
+      "sha256": "533f942a84f428aa66a345bfe0b3d8cf8a640c9c2f42830dc6f6c62692649adc",
+      "size": 998
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/policy.py",
+      "sha256": "1879f0d2b554a80d2a09ab9d7e8343d4e0584094646df122449e5cec6b1cc069",
+      "size": 4241
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/preferences.py",
+      "sha256": "520ce4382a5754f084d586bb7bf1eeea5623e979d23263560b8ed26f33650b58",
+      "size": 865
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/safety.py",
+      "sha256": "cd79997754be745be9aa92780274de2427becae5fa1be4805f4585ccc43aa98c",
+      "size": 18113
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/storage.py",
+      "sha256": "de4a10dbdb3b4e97dffb37c4092abb0beb15253db92660fbee7926e95740ce4d",
+      "size": 20417
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/storage_ui.py",
+      "sha256": "bc62080cb8b429611e80762bfbf7ce176a753aac0600c9c05d7cb3dae4b3d680",
+      "size": 6219
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/ui.html",
+      "sha256": "924df921c2a27f35f16458e15f3e29f959d86e0df2b6903f674f4fbe0575b20f",
+      "size": 4684
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/validate.py",
+      "sha256": "232719babf740e9b053bef349d592feff3101cb69d1564fdbe4b3e8d08fabe3e",
+      "size": 10328
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/web.py",
+      "sha256": "9c80e3b8decff94cf74b72875e6867eb85cd8b46d15c595110a88ae4cb85c1c2",
+      "size": 5000
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "src/releasecraft/windows.py",
+      "sha256": "83aee08bbd675a376c74eb299890d45764d23011ac4653bd76bd02095fb35a23",
+      "size": 7878
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_adversarial_round.py",
+      "sha256": "1aeb2eeb737ac7c690a7fdbb1c1ad1d2a71830e6e412d167f655abaa2806515a",
+      "size": 13247
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_batch_regressions.py",
+      "sha256": "c3d40fba99274412a61eda43d30cfc585f94c8d831432da8f1c4fbf128b48363",
+      "size": 15497
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_core.py",
+      "sha256": "5725b65e391c8318a441637436b96013691fcc8b4c997932b7af506e999f29ec",
+      "size": 22871
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_desktop.py",
+      "sha256": "03c14b278bb7eac51d643e7ecc045eda1749d9483a1bbbc22ccb4c3ce476b043",
+      "size": 13004
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_distribution.py",
+      "sha256": "de975706aeedb051608d808289a14082ae65412c20ee4f7c0aa564cc4752b726",
+      "size": 9543
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_local_readers.py",
+      "sha256": "2e1cb4be67eadf48d627d3071be28aa6cf14e08010864b5c14fb18e2a098b856",
+      "size": 5260
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_managed_output.py",
+      "sha256": "b592f925df767e3d17a365e9da23a7b6c63aae2a3254fb877d72e91ad0a77c16",
+      "size": 13305
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_native.py",
+      "sha256": "dae781d62d3d41bc649204d05927c80a801e49ac8df65e3b277e420c088f856f",
+      "size": 3471
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_npm_config.py",
+      "sha256": "b3e42d636423dafa4d227c3f442b66b079d1d4fa2b825acfe33547414cebcdb0",
+      "size": 10300
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_python_credentials.py",
+      "sha256": "782bb0b9818fe97a2aac81ae94119bf63fb9d268a60ebb3d887c2992759e4ee8",
+      "size": 4554
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_review_regressions.py",
+      "sha256": "c823859fccd866ce4ed216a4b4f8bf035562c905311c749d529f37ec62b2880c",
+      "size": 4040
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_runtime.py",
+      "sha256": "413a446ce5df1443b841ca4827bc90ecbdc7e22e023f237e0ae32784e6e14d9e",
+      "size": 8228
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_scan_limits.py",
+      "sha256": "5502de91d9f7707191d8f499abd66c50f7f1c2230edc40bd25788e28a38737a1",
+      "size": 14408
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_small_medium.py",
+      "sha256": "8bc69ae2fcdbe044674ba0b09eb4af78628d2c383f42eda729f492a15c6669bb",
+      "size": 12059
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_storage.py",
+      "sha256": "82c390a99376640eb3fc7cd1124fb38de21d1c0be98c589d5a8b18ede953dfd7",
+      "size": 13841
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_ui_script.py",
+      "sha256": "198c16906329ba43caee56e1e40546aa6ad005dd71fc8076cb8f2c00cdaa4516",
+      "size": 2836
+    },
+    {
+      "classification": "source",
+      "mode": 420,
+      "path": "tests/test_web.py",
+      "sha256": "8d9d97b4b458690af19741bd63281abe86a9a44dc2942cfc1bf442eacd414ef0",
+      "size": 3289
+    }
+  ],
+  "mode": "source",
+  "policy_version": "1.0",
+  "schema": 1,
+  "scope": "source release; runtime validation is a separate gate",
+  "transforms": []
+}

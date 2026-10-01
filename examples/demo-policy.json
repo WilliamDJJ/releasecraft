@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "mode": "source",
+  "commands": [{"id": "demo", "argv": ["python", "main.py"], "timeout": 20}],
+  "claims": [{"description": "Load the included JSON resource and compute a total of six", "commands": ["demo"]}]
+}

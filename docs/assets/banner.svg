@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="Releasecraft — From working directory to verified release">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0e172c"/><stop offset="1" stop-color="#142b35"/></linearGradient><linearGradient id="accent"><stop stop-color="#70ead4"/><stop offset="1" stop-color="#83baff"/></linearGradient></defs>
+<rect width="1200" height="300" rx="22" fill="url(#bg)"/>
+<g transform="translate(66 76)" fill="none" stroke="url(#accent)" stroke-width="9" stroke-linejoin="round"><path d="M0 34 63 0l63 34v76l-63 36L0 110Z"/><path d="m0 34 63 36 63-36M63 70v76"/><path d="m34 82 20 20 42-43" stroke="#70ead4"/></g>
+<text x="236" y="130" font-family="system-ui,Segoe UI,sans-serif" font-size="64" font-weight="750" fill="#f0f6fc">Releasecraft</text>
+<text x="238" y="180" font-family="system-ui,Segoe UI,sans-serif" font-size="25" fill="#b5c9db">From working directory to verified release.</text>
+<text x="238" y="230" font-family="system-ui,Segoe UI,sans-serif" font-size="17" letter-spacing="2" fill="#70ead4">LOCAL FIRST   /   EXPLAINABLE   /   REPRODUCIBLE</text>
+</svg>
