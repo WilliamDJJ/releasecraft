@@ -446,8 +446,8 @@
       "classification": "source",
       "mode": 420,
       "path": "src/releasecraft/web.py",
-      "sha256": "9c80e3b8decff94cf74b72875e6867eb85cd8b46d15c595110a88ae4cb85c1c2",
-      "size": 5000
+      "sha256": "44a9e9b79fcd119ab66512c659503b19b6fe191f323400d266e7d079fd2d7a62",
+      "size": 6258
     },
     {
       "classification": "source",
@@ -572,8 +572,8 @@
       "classification": "source",
       "mode": 420,
       "path": "tests/test_web.py",
-      "sha256": "8d9d97b4b458690af19741bd63281abe86a9a44dc2942cfc1bf442eacd414ef0",
-      "size": 3289
+      "sha256": "a98804829ce5da24903398bf3f932cb961217688c4fdc5fd8ac4fbaedeb8adb9",
+      "size": 6462
     }
   ],
   "mode": "source",

@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 from pathlib import Path
 import secrets
+from time import monotonic
 from .analyze import analyze
 from .build import assemble, verify_cached
 from .policy import load_policy
@@ -26,8 +27,10 @@ def make_server(source, work, port=8765):
             pass
 
         def send(self, status, data, mime="application/json"):
+            payload = data if isinstance(data, bytes) else canonical(data)
             self.send_response(status)
             self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(payload)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header(
@@ -35,7 +38,33 @@ def make_server(source, work, port=8765):
                 "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'",
             )
             self.end_headers()
-            self.wfile.write(data if isinstance(data, bytes) else canonical(data))
+            self.wfile.write(payload)
+
+        def discard_rejected_body(self):
+            # Closing with unread POST bytes can reset the socket on Windows.
+            # Never parse rejected content; drain only a bounded declared body.
+            try:
+                remaining = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                return
+            if not 0 < remaining <= 65536 or self.headers.get("Transfer-Encoding"):
+                return
+            previous_timeout = self.connection.gettimeout()
+            deadline = monotonic() + 1.0
+            try:
+                while remaining:
+                    available = deadline - monotonic()
+                    if available <= 0:
+                        break
+                    self.connection.settimeout(available)
+                    chunk = self.rfile.read1(min(remaining, 8192))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+            except OSError:
+                pass
+            finally:
+                self.connection.settimeout(previous_timeout)
 
         def valid_host(self):
             return self.headers.get("Host") == f"127.0.0.1:{self.server.server_port}"
@@ -64,6 +93,7 @@ def make_server(source, work, port=8765):
                     self.headers.get("X-Releasecraft-Token", ""), token
                 )
             ):
+                self.discard_rejected_body()
                 self.send(403, {"error": "Origin or session token rejected"})
                 return
             try:

@@ -5,7 +5,10 @@ import json
 from pathlib import Path
 import tempfile
 import threading
+import socket
+import time
 import unittest
+from unittest.mock import patch
 from releasecraft.web import make_server
 from test_core import LICENSE
 
@@ -62,6 +65,56 @@ class WebTests(unittest.TestCase):
         h = self.auth()
         h["Origin"] = "https://invalid.example"
         self.assertEqual(self.req("/api/analyze", "POST", {}, h)[0], 403)
+
+    def test_rejected_fragmented_post_returns_complete_403_without_analysis(self):
+        for changed in ({"Origin": "https://invalid.example"}, {"Host": "invalid.example"}, {"X-Releasecraft-Token": "wrong"}):
+            for delay in (0.001, 0.01):
+                with self.subTest(rejected_field=next(iter(changed)), delay=delay), patch("releasecraft.web.analyze") as analyze:
+                    headers = {"Host": f"127.0.0.1:{self.port}", **self.auth(), **changed, "Content-Length": "2", "Connection": "close"}
+                    with socket.create_connection(("127.0.0.1", self.port), timeout=3) as connection:
+                        connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                        request = "POST /api/analyze HTTP/1.1\r\n" + "".join(f"{key}: {value}\r\n" for key, value in headers.items()) + "\r\n"
+                        connection.sendall(request.encode("ascii"))
+                        time.sleep(delay)
+                        connection.sendall(b"{}")
+                        response = http.client.HTTPResponse(connection)
+                        response.begin()
+                        body = response.read()
+                        self.assertEqual(response.status, 403)
+                        self.assertEqual(int(response.getheader("Content-Length")), len(body))
+                        self.assertEqual(json.loads(body), {"error": "Origin or session token rejected"})
+                        response.close()
+                    analyze.assert_not_called()
+        self.assertEqual(json.loads(self.req("/api/state", headers=self.auth())[1])["plan"], None)
+
+    def test_rejected_post_does_not_wait_for_oversized_or_invalid_length(self):
+        for size in ("65537", "invalid"):
+            with self.subTest(length=size), patch("releasecraft.web.analyze") as analyze:
+                headers = {**self.auth(), "Origin": "https://invalid.example", "Content-Length": size}
+                connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=3)
+                try:
+                    connection.request("POST", "/api/analyze", headers=headers)
+                    response = connection.getresponse()
+                    self.assertEqual(response.status, 403)
+                    response.read()
+                finally:
+                    connection.close()
+                analyze.assert_not_called()
+        self.assertEqual(self.req("/")[0], 200)
+
+    def test_rejected_incomplete_body_has_bounded_wait(self):
+        headers = {**self.auth(), "Origin": "https://invalid.example", "Content-Length": "2"}
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=3)
+        with patch("releasecraft.web.analyze") as analyze:
+            try:
+                connection.request("POST", "/api/analyze", headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 403)
+                response.read()
+            finally:
+                connection.close()
+            analyze.assert_not_called()
+        self.assertEqual(self.req("/")[0], 200)
 
     def test_dns_rebinding_rejected(self):
         h = self.auth()
