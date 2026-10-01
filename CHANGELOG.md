@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 — First public release candidate
+## 1.0.0 — First public release
 
 - Add a compact native desktop workflow with folder selection, measured progress, cancellation, problem details and output navigation
 - Provide persistent English / Chinese controls and a Windows double-click offline installation path
