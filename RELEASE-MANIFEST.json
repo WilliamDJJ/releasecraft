@@ -327,8 +327,8 @@
       "classification": "source",
       "mode": 420,
       "path": "src/releasecraft/build.py",
-      "sha256": "99a46dc652ee808618ae62215d2931fc9f853978bcee5bec42c8043896c99d85",
-      "size": 13500
+      "sha256": "e28f2ac2792438e972ee508b662e4d01077641820df77397056151440aa54f5c",
+      "size": 13720
     },
     {
       "classification": "source",
@@ -488,8 +488,8 @@
       "classification": "source",
       "mode": 420,
       "path": "tests/test_distribution.py",
-      "sha256": "de975706aeedb051608d808289a14082ae65412c20ee4f7c0aa564cc4752b726",
-      "size": 9543
+      "sha256": "4fe6a9ba610d7516bb1c0c8ff9bf04c6a7b954e274e5e9d4a2d8eff9fc7178fb",
+      "size": 9579
     },
     {
       "classification": "source",
@@ -502,8 +502,8 @@
       "classification": "source",
       "mode": 420,
       "path": "tests/test_managed_output.py",
-      "sha256": "b592f925df767e3d17a365e9da23a7b6c63aae2a3254fb877d72e91ad0a77c16",
-      "size": 13305
+      "sha256": "ce70eed544f0be5bc8f3ecc64178a3fbcf9d6722407128b9cf9d835723ee3439",
+      "size": 15418
     },
     {
       "classification": "source",
@@ -544,8 +544,8 @@
       "classification": "source",
       "mode": 420,
       "path": "tests/test_scan_limits.py",
-      "sha256": "5502de91d9f7707191d8f499abd66c50f7f1c2230edc40bd25788e28a38737a1",
-      "size": 14408
+      "sha256": "e1a207ad3307fd8cf022aadd640d5e97c0b4be78ce1b721698b4b90aac835375",
+      "size": 14418
     },
     {
       "classification": "source",

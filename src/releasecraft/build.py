@@ -27,7 +27,9 @@ MANIFEST = "RELEASE-MANIFEST.json"
 
 def assemble(source, plan, output, *, operation=None, owned_tree=None):
     source = Path(source).resolve()
-    output = Path(output).resolve()
+    # Journal writes use the checked OwnedTree spelling, including NTFS 8.3 aliases.
+    # Resolving only the output would break its exact match and relative paths.
+    output = Path(output).absolute() if owned_tree is not None else Path(output).resolve()
     separate(source, output)
     verify_plan(plan)
     if output.exists():

@@ -169,11 +169,11 @@ class DistributionTests(unittest.TestCase):
                 mock.patch.object(module.subprocess, "run") as run,
             ):
                 module.main()
-            builder.return_value.create.assert_called_once_with(root / ".venv")
+            builder.return_value.create.assert_called_once_with((root / ".venv").resolve())
             argv = run.call_args_list[0].args[0]
             self.assertIn("--no-index", argv)
             self.assertIn("--no-deps", argv)
-            self.assertTrue(str(argv[0]).startswith(str(root / ".venv")))
+            self.assertTrue(Path(argv[0]).is_relative_to((root / ".venv").resolve()))
 
     def test_installer_uses_posix_symlinks_and_windows_copies(self):
         from types import SimpleNamespace
@@ -198,7 +198,7 @@ class DistributionTests(unittest.TestCase):
                 ):
                     module.main()
                     builder.assert_called_once_with(with_pip=True, symlinks=symlinks)
-                    builder.return_value.create.assert_called_once_with(root / ".venv")
+                    builder.return_value.create.assert_called_once_with((root / ".venv").resolve())
 
     def test_launchers_forward_arguments_without_policy_changes(self):
         win = (ROOT / "packaging/windows/releasecraft.cmd").read_text()

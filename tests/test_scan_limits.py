@@ -107,7 +107,7 @@ class ScanLimitTests(unittest.TestCase):
 
     def test_logical_large_payloads_reserve_budget_before_reads(self):
         logical_size = 16 * 1024 * 1024
-        root = self.root
+        root = self.root.resolve()
 
         class Payload:
             def __len__(self):

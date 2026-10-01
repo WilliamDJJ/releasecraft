@@ -51,6 +51,46 @@ class ManagedOutputTests(unittest.TestCase):
                 self.assertEqual(z.read(name),data)
         self.assertEqual({name:(self.source/name).read_bytes() for name in self.original},self.original)
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows short-path alias')
+    def test_private_state_short_path_keeps_journal_and_repeat_identity(self):
+        import ctypes
+        from ctypes import wintypes
+
+        self.state.mkdir()
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.GetShortPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+        kernel.GetShortPathNameW.restype = wintypes.DWORD
+        buffer = ctypes.create_unicode_buffer(32768)
+        length = kernel.GetShortPathNameW(str(self.state), buffer, len(buffer))
+        if not length:
+            raise ctypes.WinError(ctypes.get_last_error())
+        self.assertLess(length, len(buffer))
+        alias = Path(buffer.value)
+        if alias == self.state.resolve():
+            self.skipTest('Filesystem supplies no distinct short-path alias')
+        self.assertTrue(alias.samefile(self.state))
+        first = prepare(self.source, operation=Operation(state_directory=alias))
+        second = prepare(self.source, operation=Operation(state_directory=alias))
+        self.assertEqual(first['status'], 'CANDIDATE')
+        self.assertEqual(second['status'], 'CANDIDATE')
+        self.assertEqual(first['archive_sha256'], second['archive_sha256'])
+        self.assertNotEqual(first['output'], second['output'])
+        self.assertTrue(Path(first['audit']).is_relative_to(alias))
+        self.assertEqual({name:(self.source/name).read_bytes() for name in self.original}, self.original)
+
+    def test_assembly_rejects_stage_outside_its_private_journal(self):
+        from releasecraft.storage import Storage
+
+        plan = analyze(self.source)
+        self.assertEqual(plan['status'], 'PLANNED')
+        with Storage(self.state) as storage:
+            _, tree = storage.new_job()
+            wrong = tree.path / 'unregistered-stage'
+            with self.assertRaisesRegex(ReleaseError, 'Private stage must match'):
+                assemble(self.source, plan, wrong, owned_tree=tree)
+            self.assertFalse(wrong.exists())
+            self.assertFalse((tree.path / 'stage').exists())
+
     def test_mutation_at_publication_boundary_rejects_candidate(self):
         def mutate(event):
             if event['phase'] == 'Publishing':
