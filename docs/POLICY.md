@@ -1,4 +1,4 @@
-# Policy reference (schema 1, policy 1.0)
+# Policy reference (schema 1, policy 1.1)
 
 Policies are explicit JSON files passed with `--config`. A policy in an input repository is
 never automatically loaded. Review its commands before any execution. Unknown fields are
@@ -17,7 +17,9 @@ selects descendants. Absolute, traversal and Windows-reserved paths are rejected
 | external | Resource path to reason, instructions and expected sha256; remains BLOCKED pending external validation |
 | third_party | Path to reason, source URL and license identifier; record only verified rights |
 | notebook_outputs | strip (source/runtime default) or preserve (research default); both remain subject to content scanning |
-| max_file_bytes | Per-file bound, default 16777216; range 1024–134217728 |
+| max_file_bytes | Optional whole-file read bound; null by default, integer at least 1024 when set |
+| max_scan_bytes | Optional aggregate read-reservation budget; null by default, integer at least 1024 when set |
+| decisions | Exact path to action (include/exclude/review), nonempty reason (up to 1000 characters), and current lowercase SHA-256 |
 | commands | Objects containing unique id, argv string array, optional timeout (1–600 seconds) |
 | claims | Objects containing description and a nonempty commands array of command IDs |
 

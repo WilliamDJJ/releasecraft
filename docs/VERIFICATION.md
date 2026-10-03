@@ -48,6 +48,20 @@ the actual localhost HTTP workflow. Unit mocks document narrow interfaces and do
 for native installation or end-to-end execution. README previews are local renderings, not evidence
 that a GitHub repository or Release exists. CI configuration is not a passing CI run.
 
+## Large payload and review contracts
+
+`StreamingTests`, `AgentHandoffTests` and `UpgradeAdversarialTests` cover bounded reads, full content
+hashes, byte-budget opt-in, disk refusal, ZIP64 metadata, interruption, source mutation, secret
+recognizers across windows, private state and exact reviewed decisions. A real 65,536-entry format
+fixture tests ZIP64 directory handling; this is separate from the smaller source-inventory entry bound.
+The native review regression checks language switching, pending state, policy export, no overwrite
+and reanalysis. External acceptance records actual large-payload size, elapsed time and measured
+process memory, plus exact archive hashes. Forced small ZIP64 tests are never reported as >4 GiB I/O.
+
+Complete-suite counts, installed import locations, skips, explicit runtime commands and actual
+native GUI interaction belong in the artifact-bound release report. Successful source analysis alone
+does not prove Notebook execution, TypeScript compilation or installation of an upstream package.
+
 ## Test prerequisites
 
 The complete suite requires Python with an importable `tkinter` module and its

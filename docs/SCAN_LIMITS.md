@@ -1,42 +1,51 @@
-# Scan limits and diagnostic interpretation
+# Resource bounds and incomplete plans
 
-## Deterministic limits
+## Payload bytes
 
-- 20,000 observed directory entries globally, including unreadable and rejected entries
-- 4,096 entries in one directory
-- 256 MiB of read reservations; each attempted regular-file read reserves its observed size plus one mutation-detection byte
-- 1,000 ordinary inventory error details, plus a terminal limit diagnostic
-- 64 directory levels
+There is no default per-project or opaque-resource byte ceiling. File hashing, copying, ZIP writing,
+verification and extraction use 1 MiB reads. Small-file caching is limited to 32 MiB per inventory.
+Large content checks use overlapping 64 KiB windows; ambiguous overlong recognizer context blocks
+instead of being silently discarded. These recognizers are not a complete DLP system.
+
+Code, Notebooks and structured documents still require a complete bounded parse (16 MiB per file).
+An oversized document produces `parser-file-limit`; it is never approved by examining only a prefix.
+Large opaque required resources can be retained and hashed without parsing their whole content.
+Optional policy `max_file_bytes` and `max_scan_bytes` impose operator-selected byte budgets;
+both default to null. Read reservations include one growth-detection byte and are not refunded.
+
+Build and extraction check current free disk space. Private staging reservations use actual selected
+sizes plus archive/evidence overhead, with no former 640 MiB staging or 1 GiB total-state cap.
+Archive verification first takes a temporary disk-backed snapshot, shared by extraction/runtime.
+Allow space for the source copy, archive, immutable verification copy and extracted runtime files.
+Free-space estimates cannot prevent another process filling the disk; write failures are failures.
+
+## Independent safety and evidence limits
+
+- 20,000 observed directory entries globally, including errors and rejected entries
+- 4,096 entries in one directory; 64 directory levels
+- 1,000 ordinary inventory error details plus a terminal diagnostic
 - 20,000 analysis evidence charges across findings, references/imports and blocker details
+- ZIP central-directory metadata 64 MiB; release manifest 16 MiB
+- ZIP entries support STORE/DEFLATE, reject encryption, links and expansion ratios above 1,000
+- Public HTTP request bodies remain limited to 64 KiB; these are not project payload uploads
 
-One enumeration lookahead entry may detect overflow. Directory enumeration is bounded before sorting;
-an overflowing directory is not partially processed in filesystem enumeration order. Read reservations
-are not refunded when a read fails. Reservation counters describe a conservative bound, not measured
-I/O for failed reads. The per-file policy limit remains separate (16 MiB by default).
+ZIP64 is supported by archive writing and verification. This does not mean source analysis promises
+more than its entry bound. Format-scale tests and full-project tests are reported separately.
+Directory enumeration is bounded before sorting, with one lookahead to detect overflow. A directory
+overflow stops globally instead of choosing an arbitrary enumeration prefix. Incomplete scans are
+BLOCKED; their hashes and counters cover only the explicitly recorded scope. They cannot build.
 
-Limits stop globally and mark the plan incomplete. Successful files retained before a stop are hashed,
-but that identity covers only the stated scope, not an unvisited whole project. No incomplete plan can
-build a release. Detailed counts are retained-evidence counts, not estimates of unknown omissions.
+Private history retains up to 20 eligible full audits (64 MiB total) and 100 summaries. Per-audit,
+journal, inspection and owner-registration bounds still protect metadata handling; see [desktop
+storage](DESKTOP.md#storage-and-history). Unknown or changed content is retained for review.
 
-These are source-analysis and evidence bounds, not a hostile-code execution sandbox or a promise of
-constant wall-clock latency. Slow filesystems, parsing and pattern matching still depend on the input.
-Target execution uses its separate timeout and isolation controls.
+These bounds are not a hostile-code sandbox or a wall-clock guarantee. Slow disks, parsing and
+pattern matching depend on input. Cancellation is checked between chunks; blocking OS calls can
+delay it. Explicit target execution uses separate timeouts and isolation controls.
 
-## Large workspaces
+## Read the result correctly
 
-A development directory may contain multiple historical projects, data archives and environments.
-A safe stop is preferable to silently calling its first subset a complete release. Select a coherent
-component using actual entry points, dependencies and accepted version evidence. Do not pick the
-newest timestamp alone, and do not delete core capabilities to fit a limit.
-
-The default engine cannot know approvals stored only in a private conversation. Supply a reviewed
-project policy or an explicitly selected source root when that information is required. Such a run is
-configured assistance, not an unassisted-default benchmark. Preserve the original default outcome when
-comparing results, and evaluate manually curated packages with the same functional and safety checks.
-
-## CLI compatibility
-
-The plan command prints grouped summaries for `plan`. Full plans continue to be written to the specified
-work directory. Use `--details` when full stdout is needed; handle it as potentially private evidence.
-The statuses and exit codes are unchanged: a blocked scan returns 2, a static candidate returns 3,
-and only the appropriate completed gate returns 0.
+`plan` prints grouped summaries; `--details` prints private full evidence. A blocked scan returns 2,
+a static candidate returns 3, and the appropriate completed gate returns 0. Fewer retained blockers
+after a limit do not mean problems were fixed. Select a coherent component using real dependencies
+and reviewed requirements, never modification time alone. No policy can approve a detected secret.

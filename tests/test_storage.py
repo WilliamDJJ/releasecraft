@@ -138,9 +138,16 @@ class StorageTests(unittest.TestCase):
             if event['phase']=='Completing staging':
                 archive=next((self.state/'jobs').glob('*/stage/release.zip'))
                 os.link(archive,self.root/'hard-link.zip')
-        result=self.run_prepare(link)
-        self.assertEqual(result['storage_warning'],'private-staging-retained')
-        self.assertTrue((Path(result['audit'])/'stage/release.zip').exists())
+        # The streamed verifier now refuses a hard-linked archive before publish,
+        # while cleanup must still retain the changed private entry.
+        with self.assertRaises(ReleaseError):
+            self.run_prepare(link)
+        self.assertEqual(storage_status(self.state)['status'], 'UNAVAILABLE')
+        status = json.loads((self.state / 'storage-index.json').read_bytes())
+        self.assertEqual(status['jobs'][-1]['status'], 'FAILED')
+        self.assertEqual(status['jobs'][-1]['cleanup'], 'RETAINED')
+        self.assertTrue(next((self.state / 'jobs').glob('*/stage/release.zip')).exists())
+        self.assertFalse(list((self.source / 'releasecraft-output').glob('release-*')))
 
     def test_active_job_cannot_be_cleaned_or_admitted_twice(self):
         with Storage(self.state) as store:

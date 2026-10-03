@@ -52,10 +52,10 @@ those hashes and requires rebuilding and affected revalidation.
 Run on the actual target OS from an environment with Releasecraft installed:
 
 ```sh
-python scripts/check_distribution.py --archive ../releasecraft-artifacts/releasecraft-1.0.0-linux.tar.gz --trust-distribution
+python scripts/check_distribution.py --archive ../releasecraft-artifacts/releasecraft-1.1.0-linux.tar.gz --trust-distribution
 ```
 
-On Windows, pass `releasecraft-1.0.0-windows.zip` instead. The check installs the bundled wheel
+On Windows, pass `releasecraft-1.1.0-windows.zip` instead. The check installs the bundled wheel
 offline and executes the demo in a disposable directory. It intentionally requires trust and is
 not a sandbox for third-party software. Full source tests and launcher/UI checks are separate gates.
 
@@ -65,7 +65,7 @@ Only after acceptance and explicit authorization to publish:
 
 1. Verify the official owner/repository and push only the reviewed source root with a private commit email
 2. Prepare versioned asset links in the release revision; verify them after uploading the corresponding assets
-3. Create tag `v1.0` for the exact accepted source revision
+3. Create tag `v1.1` for the exact accepted source revision
 4. Create a GitHub Release for that tag and attach the five public build outputs above plus the validation report
 5. Verify the public release, every download hash, both README links and the actual CI result for the tagged commit
 

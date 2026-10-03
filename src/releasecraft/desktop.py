@@ -62,6 +62,7 @@ class App:
         self.details_window = None
         self.preference_warning = False
         self.storage_window = None
+        self.review_window = None
         root.title(self.tr("title"))
         root.minsize(660, 460)
         root.geometry("720x490")
@@ -167,7 +168,12 @@ class App:
         self.start_button = self.widget(ttk.Button, footer, "prepare", command=self.start)
         self.start_button.pack(side="right")
         self.storage_button = self.widget(ttk.Button, outer, "storage.title", command=self.show_storage)
-        self.storage_button.grid(row=10, column=0, columnspan=3, sticky="w", pady=(8,0))
+        self.storage_button.grid(row=10, column=0, sticky="w", pady=(8,0))
+        self.analyze_button = self.widget(ttk.Button, outer, "review.analyze", command=lambda: self.start(review_only=True))
+        self.analyze_button.grid(row=10, column=1, sticky="w", pady=(8,0))
+        self.review_button = self.widget(ttk.Button, outer, "review.title", command=self.show_review, state="disabled")
+        self.review_button.grid(row=10, column=2, sticky="e", pady=(8,0))
+        self.controls.append(self.analyze_button)
         self.refresh_language()
         self.timer = root.after(70, self.poll)
 
@@ -206,6 +212,8 @@ class App:
             self.render_details()
         if self.storage_window is not None and self.storage_window.window.winfo_exists():
             self.storage_window.refresh_language()
+        if self.review_window is not None and self.review_window.window.winfo_exists():
+            self.review_window.refresh_language()
         if self.preference_warning:
             self.current.set(self.tr("preference_error"))
         self.resize()
@@ -225,7 +233,7 @@ class App:
                 self.current.set(self.tr("no_execution"))
         elif self.result is not None:
             status = self.result["status"]
-            self.phase.set(self.tr({"CANDIDATE":"candidate", "BLOCKED":"blocked", "CANCELLED":"cancelled"}.get(status, "failed")))
+            self.phase.set(self.tr({"CANDIDATE":"candidate", "BLOCKED":"blocked", "CANCELLED":"cancelled", "PLANNED":"PLANNED"}.get(status, "failed")))
             self.current.set(self.tr("storage.warning") if self.result.get("storage_warning") else self.tr("candidate_limit" if status == "CANDIDATE" else "source_unchanged"))
         else:
             self.phase.set(self.tr("idle"))
@@ -286,7 +294,7 @@ class App:
         except queue.Full:
             pass
 
-    def start(self):
+    def start(self, *, review_only=False):
         if self.busy:
             return
         if not self.source.get().strip() or not self.output.get().strip():
@@ -300,6 +308,9 @@ class App:
             return
         source, output = self.source.get().strip(), self.output.get().strip()
         self.result = None
+        self.review_button.state(["disabled"])
+        if self.review_window is not None and self.review_window.window.winfo_exists():
+            self.review_window.window.destroy()
         self.latest_event = None
         while not self.progress_events.empty():
             self.progress_events.get_nowait()
@@ -314,7 +325,7 @@ class App:
         self.render_progress()
         def work():
             try:
-                result = prepare(source, output, policy, self.operation)
+                result = prepare(source, output, policy, self.operation, review_only=True) if review_only else prepare(source, output, policy, self.operation)
             except Cancelled:
                 result = {"status":"CANCELLED", "problems":[]}
             except Exception:
@@ -364,12 +375,26 @@ class App:
             self.render_progress()
             if result.get("problems") or result.get("storage_warning"):
                 self.details_button.state(["!disabled"])
+            if result.get("audit"):
+                self.review_button.state(["!disabled"])
             if result.get("output"):
                 self.open_button.state(["!disabled"])
             if self.closing:
                 self.close()
                 return
         self.timer = self.root.after(70, self.poll)
+
+    def show_review(self):
+        if self.busy or not self.result or not self.result.get("audit"):
+            return
+        if self.review_window is not None and self.review_window.window.winfo_exists():
+            self.review_window.window.lift()
+            return
+        from .review_ui import ReviewWindow
+        try:
+            self.review_window = ReviewWindow(self)
+        except (OSError, ReleaseError, ValueError, TypeError):
+            messagebox.showerror(self.tr("review.title"), self.tr("review.load_error"), parent=self.root)
 
     def show_storage(self):
         if self.storage_window is not None and self.storage_window.window.winfo_exists():

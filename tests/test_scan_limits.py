@@ -73,7 +73,7 @@ class ScanLimitTests(unittest.TestCase):
     def test_unreadable_entries_count_and_stop_other_branches(self):
         for name in ("a/1.txt", "a/2.txt", "b/1.txt", "b/2.txt", "c/1.txt"):
             self.put(name)
-        with patch.object(analysis, "read_safe", side_effect=PermissionError("private diagnostic")) as read:
+        with patch.object(analysis, "snapshot", side_effect=PermissionError("private diagnostic")) as read:
             _, _, errors, audit = self.inventory(MAX_SCAN_ENTRIES=5)
         self.assertEqual(read.call_count, 2)
         self.assertEqual(audit["errors_observed"], 2)
@@ -95,7 +95,7 @@ class ScanLimitTests(unittest.TestCase):
             yielded.clear()
             with (
                 patch.object(analysis.os, "scandir", return_value=contextlib.nullcontext(stream(reverse))),
-                patch.object(analysis, "read_safe") as read,
+                patch.object(analysis, "snapshot") as read,
             ):
                 files, _, errors, audit = self.inventory(MAX_DIRECTORY_ENTRIES=3)
             self.assertEqual(len(yielded), 4)
@@ -110,8 +110,8 @@ class ScanLimitTests(unittest.TestCase):
         root = self.root.resolve()
 
         class Payload:
-            def __len__(self):
-                return logical_size
+            cached = None
+            size = logical_size
 
         class Entry:
             def __init__(self, number):
@@ -124,7 +124,8 @@ class ScanLimitTests(unittest.TestCase):
         audit = {}
         with (
             patch.object(analysis.os, "scandir", return_value=contextlib.nullcontext(iter(Entry(i) for i in range(32)))),
-            patch.object(analysis, "read_safe", return_value=(Payload(), False)) as read,
+            patch.object(analysis, "snapshot", return_value=Payload()) as read,
+            patch.object(analysis, "MAX_SCAN_BYTES", 256 * 1024 * 1024),
         ):
             files, _, errors = analysis.inventory(self.root, logical_size, audit=audit)
         self.assertEqual(read.call_count, 15)
@@ -136,7 +137,7 @@ class ScanLimitTests(unittest.TestCase):
     def test_failed_reads_do_not_refund_possible_consumed_bytes(self):
         for name in ("a.txt", "b.txt", "c.txt"):
             self.put(name, b"1234")
-        with patch.object(analysis, "read_safe", side_effect=OSError("synthetic")) as read:
+        with patch.object(analysis, "snapshot", side_effect=OSError("synthetic")) as read:
             _, _, errors, audit = self.inventory(MAX_SCAN_BYTES=10)
         self.assertEqual(read.call_count, 2)
         self.assertEqual(audit["bytes_reserved"], 10)
@@ -156,7 +157,7 @@ class ScanLimitTests(unittest.TestCase):
     def test_oversized_file_is_rejected_from_metadata(self):
         self.put("large.bin", b"12345")
         audit = {}
-        with patch.object(analysis, "read_safe") as read:
+        with patch.object(analysis, "snapshot") as read:
             _, _, errors = analysis.inventory(self.root, 4, audit=audit)
         read.assert_not_called()
         self.assertEqual(audit["bytes_reserved"], 0)
@@ -164,7 +165,7 @@ class ScanLimitTests(unittest.TestCase):
 
     def test_metadata_size_disagreement_is_not_retained(self):
         self.put("main.py", b"pass")
-        with patch.object(analysis, "read_safe", return_value=(b"grown", False)) as read:
+        with patch.object(analysis, "snapshot", side_effect=ReleaseError("Source changed during read")) as read:
             files, _, errors, audit = self.inventory()
         self.assertEqual(read.call_args.args[2], 4)
         self.assertEqual(files, {})
@@ -174,7 +175,7 @@ class ScanLimitTests(unittest.TestCase):
     def test_inventory_diagnostics_are_capped_and_redacted(self):
         for number in range(8):
             self.put(f"{number}.txt")
-        with patch.object(analysis, "read_safe", side_effect=PermissionError("private message")) as read:
+        with patch.object(analysis, "snapshot", side_effect=PermissionError("private message")) as read:
             _, _, errors, audit = self.inventory(MAX_INVENTORY_ERRORS=2)
         self.assertEqual(read.call_count, 3)
         self.assertEqual(len(errors), 3)
@@ -198,7 +199,7 @@ class ScanLimitTests(unittest.TestCase):
 
         with (
             patch.object(analysis.os, "scandir", return_value=contextlib.nullcontext(entries())),
-            patch.object(analysis, "read_safe") as read,
+            patch.object(analysis, "snapshot") as read,
         ):
             files, _, errors, audit = self.inventory()
         self.assertEqual(files, {})

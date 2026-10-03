@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import ctypes
+from contextlib import contextmanager
 from ctypes import wintypes as w
 import os
 from pathlib import Path
@@ -34,7 +35,8 @@ class FileInfo(ctypes.Structure):
     ]
 
 
-def read_locked(root, rel, limit):
+@contextmanager
+def open_locked(root, rel, limit=None):
     """Hold every ancestor without delete sharing until the selected file is read."""
     if (
         not isinstance(rel, str)
@@ -90,24 +92,31 @@ def read_locked(root, rel, limit):
                 raise OSError("Expected directory")
             if is_file:
                 size = (info.size_high << 32) | info.size_low
-                if info.attributes & 0x10 or info.links != 1 or size > limit:
+                if info.attributes & 0x10 or info.links != 1 or (limit is not None and size > limit):
                     raise OSError("Unsafe file")
                 fd = msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY)
                 handles.pop()
                 with os.fdopen(fd, "rb") as stream:
                     before = os.fstat(stream.fileno())
-                    data = stream.read(limit + 1)
+                    yield stream, before
                     after = os.fstat(stream.fileno())
-                if len(data) > limit or (before.st_size, before.st_mtime_ns) != (
-                    after.st_size,
-                    after.st_mtime_ns,
+                if (before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (
+                    after.st_size, after.st_mtime_ns, after.st_ctime_ns,
                 ):
                     raise OSError("File changed")
-                return data, bool(before.st_mode & 0o111)
+                return
     finally:
         for handle in reversed(handles):
             k.CloseHandle(handle)
     raise OSError("Missing file")
+
+
+def read_locked(root, rel, limit):
+    with open_locked(root, rel, limit) as (stream, before):
+        data = stream.read(limit + 1)
+        if len(data) > limit:
+            raise OSError("File changed")
+    return data, bool(before.st_mode & 0o111)
 
 
 class BasicLimit(ctypes.Structure):

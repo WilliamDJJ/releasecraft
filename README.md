@@ -1,11 +1,16 @@
 <p align="center"><img src="docs/assets/banner.svg" alt="Releasecraft — From working directory to verified release" width="100%"></p>
 <p align="center"><strong>Keep what matters. Explain every decision. Verify the release.</strong></p>
-<p align="center"><a href="CHANGELOG.md"><img src="docs/assets/version.svg" alt="Version 1.0.0"></a> <a href="#quick-start"><img src="docs/assets/python.svg" alt="Python 3.11+"></a> <a href="LICENSE"><img src="docs/assets/license.svg" alt="MIT license"></a> <a href="docs/DESIGN.md"><img src="docs/assets/local.svg" alt="Local analysis"></a></p>
+<p align="center"><a href="CHANGELOG.md"><img src="docs/assets/version.svg" alt="Version 1.1.0"></a> <a href="#quick-start"><img src="docs/assets/python.svg" alt="Python 3.11+"></a> <a href="LICENSE"><img src="docs/assets/license.svg" alt="MIT license"></a> <a href="docs/DESIGN.md"><img src="docs/assets/local.svg" alt="Local analysis"></a></p>
 <p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a><br><a href="#why-releasecraft">Why Releasecraft?</a> · <a href="docs/DOWNLOADS.md">Downloads</a> · <a href="#quick-start">Quick start</a> · <a href="docs/POLICY.md">Configuration</a> · <a href="docs/VERIFICATION.md">Verification</a></p>
 
-## Turn a messy project into a release you can inspect
+## Your AI-built project works. Make its release repeatable.
 
-Releasecraft prepares clean, reproducible open-source **source releases** from working directories.
+When an AI assistant finishes a project, its folder may also contain local credentials, experiments,
+generated reports and parallel checkouts. Asking another assistant to "clean it up" can produce a
+different file set each time. Releasecraft saves the rules and reviewed decisions, so another person
+or agent can repeat the same release without access to the original conversation.
+
+Releasecraft prepares inspectable, reproducible open-source **source releases** from working directories.
 It identifies code and resource relationships, records what to keep and why, builds a separate
 release copy, and checks the actual archive. A compact native desktop window, local HTTP interface and CLI share the same deterministic engine.
 Original source files stay unchanged; the desktop workflow adds a separately owned output directory.
@@ -24,9 +29,25 @@ Original source files stay unchanged; the desktop workflow adds a separately own
 
 A smaller archive is useful only if the declared functionality, maintenance files and license obligations survive.
 
+## Consistent decisions, including larger projects
+
+- Every selected file carries a content hash. Reviewed include/exclude/review decisions also bind
+  the exact file hash; a later change requires review again. A saved policy can be explicitly loaded
+  by another person or agent. A private plan records policy, tool version and the input snapshot.
+- Tests, fixtures, lockfiles, required data, docs and reproducibility assets remain part of a source
+  release. Shared agent instructions are distinct from private authentication and session state.
+  A screenshot or report is not discarded merely because of its name.
+- Scanning, staging, ZIP writing, verification and extraction stream payloads. There is no default
+  256 MiB project limit. Free disk space is checked; separate parser, metadata, entry and evidence
+  limits still fail closed. This is not an unlimited-resource or constant-time guarantee.
+
+See [AI project decisions](docs/AI_PROJECTS.md), [review and replay](docs/REVIEW.md),
+and [resource bounds](docs/SCAN_LIMITS.md). Releasecraft never infers final approval from modification
+times or private chat history, and never deletes original project files.
+
 ## Downloads
 
-Download **v1.0 (package 1.0.0)** from the [official GitHub release](https://github.com/WilliamDJJ/releasecraft/releases/tag/v1.0).
+Download **v1.1 (package 1.1.0)** from the [official GitHub release](https://github.com/WilliamDJJ/releasecraft/releases/tag/v1.1).
 The [source repository](https://github.com/WilliamDJJ/releasecraft) contains the same shared codebase used by all distributions:
 
 | Package | Intended use | Requirements |
@@ -48,8 +69,9 @@ Python 3.11+ with Tcl/Tk must already be installed. Existing environments are ne
 
 1. Choose **English / 中文** in the visible language selector
 2. Browse to a coherent project root containing its README and license
-3. Keep the default source scope, then click **Prepare package**
-4. Review any blockers; when a candidate is built, click **Open output**
+3. Keep the default source scope and click **Analyze first** to inspect file decisions, or **Prepare package** for one-click preparation
+4. Use **Review release contents** for unresolved files. Give a reason, save a policy outside the project, then analyze again
+5. When a candidate is built, click **Open output**. Share the archive; keep private plans and review evidence separate
 
 The default destination is `releasecraft-output` inside that project. Only an output registered
 by this application for that exact project is omitted from later scans. An existing unregistered

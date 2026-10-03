@@ -86,9 +86,9 @@ compact summaries. Each full audit is limited to 16 MiB (the plan itself to 8 Mi
 for result evidence). Audits that cannot be safely verified are retained, counted against private
 capacity and may block new work; count limits never authorize deleting unknown content.
 
-Admission allows at most 1 GiB of measured private state plus the current reservation. Staging
-reservations use selected sizes, conservative notebook expansion and archive overhead, capped
-at 640 MiB; actual writes are also bounded. Inspection is limited to 50,000 entries and 72
+Admission checks measured private state and actual free disk space. Staging reservations use
+selected output sizes plus archive/evidence overhead. Payload writes stream without the former
+1 GiB total-state or 640 MiB staging cap; metadata inspection and audit retention remain bounded. Inspection is limited to 50,000 entries and 72
 directory levels, journals to 12 MiB per job, and output registrations to 256. Registrations
 are not silently forgotten to make space. Slow storage still affects elapsed time. Disk free
 space is an advisory check, not a guarantee against other applications filling the disk.

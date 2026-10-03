@@ -72,8 +72,9 @@ Plan files and absolute source paths belong only in the external private work di
 Repeated runs use fresh output destinations. Interrupted builds leave no successful output;
 a frozen plan may be replayed if the complete input snapshot is unchanged.
 
-The scan is bounded to 20,000 considered entries, 256 MiB total and a configurable per-file
-limit (16 MiB by default). Known cache directories are recorded as excluded directory entries
+The scan streams payload bytes without a default aggregate byte ceiling. It retains a
+20,000-entry bound and a separate 16 MiB parser bound for code/structured documents; see
+[resource bounds](SCAN_LIMITS.md). Known cache directories are recorded as excluded directory entries
 without traversing their contents. File identity is checked around reads and the entire
 snapshot is rechecked before publication. POSIX reads use no-follow directory descriptors.
 On Windows, file reads hold ancestor handles without delete/write sharing and reject reparse points before reading. Process timeouts use a Job Object assigned before the suspended target resumes. Native Windows testing is reported separately. Freeze the input during analysis.

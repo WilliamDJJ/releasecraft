@@ -12,6 +12,7 @@ from itertools import islice
 from .storage import Storage, StorageBlocked, AUDIT_BYTES, OWNER_COUNT
 from .directory import Directory, identity
 from .operation import Operation, Cancelled, signal
+from .streaming import SpaceError, require_space
 from .safety import ReleaseError, atomic_json, canonical, digest, read_safe, separate
 
 OUTPUT_NAME = "releasecraft-output"
@@ -71,14 +72,16 @@ def lease(directory):
             os.close(fd)
 
 
-def prepare(source, output=None, policy=None, operation=None):
+def prepare(source, output=None, policy=None, operation=None, *, review_only=False):
     try:
-        return _prepare(source, output, policy, operation)
+        return _prepare(source, output, policy, operation, review_only=review_only)
+    except SpaceError:
+        return {"status": "BLOCKED", "code": "insufficient-disk-space", "problems": [{"code": "insufficient-disk-space"}]}
     except StorageBlocked:
         return {"status": "BLOCKED", "code": "STORAGE_BLOCKED", "problems": [{"code": "private-storage-blocked"}]}
 
 
-def _prepare(source, output=None, policy=None, operation=None):
+def _prepare(source, output=None, policy=None, operation=None, *, review_only=False):
     """Prepare a source CANDIDATE, never execute selected project code."""
     from .analyze import analyze
     from .build import assemble, verify_archive
@@ -129,42 +132,45 @@ def _prepare(source, output=None, policy=None, operation=None):
                     if len(plan_bytes) > AUDIT_BYTES // 2:
                         raise StorageBlocked("Private plan evidence exceeds retention limit")
                     tree.write("plan.json", plan_bytes)
-                    if plan["status"] != "PLANNED":
+                    if review_only or plan["status"] != "PLANNED":
                         result = {"status": plan["status"], "summary": plan_summary(plan), "problems": plan["blockers"], "audit": str(job)}
                         return result
                     storage.reserve_stage(plan, tree)
                     assembled = assemble(source, plan, job / "stage", operation=op, owned_tree=tree)
-                    blob = (job / "stage/release.zip").read_bytes()
-                    signal(op, "Verifying", archive_bytes=len(blob))
-                    checked = verify_archive(blob)
+                    archive_path = job / "stage/release.zip"
+                    archive_size = archive_path.stat().st_size
+                    signal(op, "Verifying", archive_bytes=archive_size)
+                    checked = verify_archive(archive_path, operation=op)
                     if checked["status"] != "CANDIDATE" or checked["archive_sha256"] != assembled["archive_sha256"]:
                         raise ReleaseError("Candidate verification failed")
                     selected.check()
                     destination.check()
                     if not owned_output(output, source, state):
                         raise ReleaseError("Output ownership changed")
+                    require_space(output, archive_size + 65536)
                     destination.mkdir(pending)
                     payload = {
-                        'release.zip': blob,
-                        'release.zip.sha256': (digest(blob) + '  release.zip\n').encode('ascii'),
+                        'release.zip.sha256': (checked['archive_sha256'] + '  release.zip\n').encode('ascii'),
                         'CHECKS.json': canonical({**checked, 'scope': 'Source candidate; target runtime has not been executed'}),
                     }
                     with Directory(output / pending) as staging:
                         pending_stamp = staging.stamp
                         for name, data in payload.items():
                             written_files[name] = staging.write_new(name, data)
-                    signal(op, "Publishing", files=len(plan["files"]), archive_bytes=len(blob))
+                        written_files['release.zip'] = staging.copy_new('release.zip', archive_path, checked['archive_sha256'], op)
+                    signal(op, "Publishing", files=len(plan["files"]), archive_bytes=archive_size)
                     if analyze(source, plan["policy"], operation=op)["plan_sha256"] != plan["plan_sha256"]:
                         raise ReleaseError("Source changed before publication")
                     selected.check()
                     op.check()
                     destination.commit_verified(pending, final, pending_stamp, {
-                        name: (written_files[name], digest(data), len(data)) for name, data in payload.items()
+                        **{name: (written_files[name], digest(data), len(data)) for name, data in payload.items()},
+                        'release.zip': (written_files['release.zip'], checked['archive_sha256'], archive_size),
                     })
                     published = True
                     result = {**checked, "output": str(output / final), "audit": str(job), "summary": plan_summary(plan), "problems": [],
                               "payload_files": sum(row['state'] in ('INCLUDE', 'TRANSFORM') for row in plan['files']) + len(plan.get('generated_files', {})),
-                              "archive_bytes": len(blob)}
+                              "archive_bytes": archive_size}
                     return result
                 except Cancelled:
                     result = {"status": "CANCELLED", "audit": str(job), "problems": []}
@@ -186,7 +192,7 @@ def _prepare(source, output=None, policy=None, operation=None):
                                     raise ReleaseError('Pending directory replaced; retained for review')
                                 for name, stamp in written_files.items():
                                     if (abandoned.path / name).exists():
-                                        abandoned.remove_verified(name, {'kind':'file', 'identity':stamp, 'sha256':digest(payload[name]), 'size':len(payload[name])})
+                                        abandoned.remove_verified(name, {'kind':'file', 'identity':stamp, 'sha256': checked['archive_sha256'] if name == 'release.zip' else digest(payload[name]), 'size': archive_size if name == 'release.zip' else len(payload[name])})
                             destination.remove_directory(pending)
                         except (OSError, ReleaseError):
                             try:

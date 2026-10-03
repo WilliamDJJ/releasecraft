@@ -13,7 +13,7 @@ def draft_readme(files, policy):
     description = "Source code, maintenance files and declared validation workflows."
     if "pyproject.toml" in files:
         try:
-            project = tomllib.loads(files["pyproject.toml"][0].decode("utf8")).get(
+            project = tomllib.loads(files["pyproject.toml"].content().decode("utf8")).get(
                 "project", {}
             )
             title = str(project.get("name", title))
@@ -22,7 +22,7 @@ def draft_readme(files, policy):
             pass
     elif "package.json" in files:
         try:
-            project = json.loads(files["package.json"][0])
+            project = json.loads(files["package.json"].content())
             title = str(project.get("name", title))
             description = str(project.get("description", description))
         except (ValueError, TypeError):

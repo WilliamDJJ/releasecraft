@@ -1,148 +1,15 @@
 {
-  "schema": 1,
-  "mode": "source",
-  "include": [
-    "*.json",
-    ".github/workflows/*.yml",
-    "docs/assets/*.svg",
-    "packaging/**",
-    "scripts/**"
-  ],
-  "exclude": [
-    "build/**",
-    "dist/**"
-  ],
-  "reviewed_dynamic": {
-    "src/releasecraft/__init__.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/cli.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/native.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/build.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/validate.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/analyze.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/safety.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/web.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/policy.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "src/releasecraft/__main__.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "tests/test_core.py": {
-      "reason": "Reviewed synthetic temporary-directory fixtures; no undeclared project resource is required."
-    },
-    "tests/test_native.py": {
-      "reason": "Reviewed synthetic temporary-directory fixtures; no undeclared project resource is required."
-    },
-    "tests/test_web.py": {
-      "reason": "Reviewed synthetic temporary-directory fixtures; no undeclared project resource is required."
-    },
-    "src/releasecraft/documentation.py": {
-      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
-    },
-    "tests/test_ui_script.py": {
-      "reason": "Reviewed synthetic temporary-directory fixtures; no undeclared project resource is required."
-    },
-    "tests/test_runtime.py": {
-      "reason": "Reviewed synthetic runtime fixtures; each validation uses fresh venv and generated temp data."
-    },
-    "src/releasecraft/windows.py": {
-      "reason": "Reviewed platform-safety implementation and regression fixtures; variable paths refer only to explicit selected sources or generated temporary files."
-    },
-    "tests/test_review_regressions.py": {
-      "reason": "Reviewed platform-safety implementation and regression fixtures; variable paths refer only to explicit selected sources or generated temporary files."
-    },
-    "scripts/build_distributions.py": {
-      "reason": "Reviewed release construction or synthetic fixture code; dynamic paths are bounded to explicit output, temporary builds, or bundled installer resources."
-    },
-    "packaging/install.py": {
-      "reason": "Reviewed release construction or synthetic fixture code; dynamic paths are bounded to explicit output, temporary builds, or bundled installer resources."
-    },
-    "tests/test_distribution.py": {
-      "reason": "Reviewed release construction or synthetic fixture code; dynamic paths are bounded to explicit output, temporary builds, or bundled installer resources."
-    },
-    "scripts/check_distribution.py": {
-      "reason": "Explicit opt-in execution of trusted release bundles, bounded temporary extraction and installed CLI checks."
-    },
-    "src/releasecraft/diagnostics.py": {
-      "reason": "Bounded deterministic summaries of private evidence; no external file or model access."
-    },
-    "tests/test_adversarial_round.py": {
-      "reason": "Reviewed synthetic file-set, mutation and archive-boundary fixtures; no external project code or services are used."
-    },
-    "tests/test_scan_limits.py": {
-      "reason": "Synthetic scan-limit and CLI fixtures use only bounded temporary paths or mocked entries."
-    },
-    "tests/test_small_medium.py": {
-      "reason": "Independent synthetic project contracts use bounded temporary fixtures and execute only authored Python or Node examples after verified extraction."
-    },
-    "tests/test_npm_config.py": {
-      "reason": "Synthetic bounded npm configuration fixtures, redacted findings and self-consistent negative archives; no npm execution or external source is required."
-    },
-    "tests/test_batch_regressions.py": {
-      "reason": "Independently authored bounded temporary fixtures for literal dependency, generated-file and maintenance regression checks; no upstream project code is executed."
-    },
-    "src/releasecraft/desktop.py": {
-      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
-    },
-    "src/releasecraft/directory.py": {
-      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
-    },
-    "src/releasecraft/managed.py": {
-      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
-    },
-    "src/releasecraft/operation.py": {
-      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
-    },
-    "src/releasecraft/preferences.py": {
-      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
-    },
-    "src/releasecraft/i18n.py": {
-      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
-    },
-    "tests/test_desktop.py": {
-      "reason": "Reviewed synthetic temporary fixtures for desktop, translation, path boundaries or static dependency contracts. No upstream code or services are executed."
-    },
-    "tests/test_managed_output.py": {
-      "reason": "Reviewed synthetic temporary fixtures for desktop, translation, path boundaries or static dependency contracts. No upstream code or services are executed."
-    },
-    "tests/test_python_credentials.py": {
-      "reason": "Reviewed synthetic temporary fixtures for desktop, translation, path boundaries or static dependency contracts. No upstream code or services are executed."
-    },
-    "tests/test_local_readers.py": {
-      "reason": "Reviewed synthetic temporary fixtures for desktop, translation, path boundaries or static dependency contracts. No upstream code or services are executed."
-    },
-    "packaging/Releasecraft.pyw": {
-      "reason": "Explicitly launched platform bootstrap verifies its own bundled wheel and invokes the offline local installer; no selected project code is run."
-    },
-    "src/releasecraft/storage.py": {
-      "reason": "Reviewed bounded private-state accounting, creation journals and retention controls, or synthetic temporary regression fixtures. Unknown content is never adopted; no selected project code is executed."
-    },
-    "src/releasecraft/storage_ui.py": {
-      "reason": "Reviewed bounded private-state accounting, creation journals and retention controls, or synthetic temporary regression fixtures. Unknown content is never adopted; no selected project code is executed."
-    },
-    "tests/test_storage.py": {
-      "reason": "Reviewed bounded private-state accounting, creation journals and retention controls, or synthetic temporary regression fixtures. Unknown content is never adopted; no selected project code is executed."
+  "claims": [
+    {
+      "commands": [
+        "install",
+        "tests"
+      ],
+      "description": "The release processing core and local web API satisfy the bundled positive and negative regression contracts"
     }
-  },
+  ],
   "commands": [
     {
-      "id": "install",
       "argv": [
         "python",
         "-m",
@@ -152,10 +19,10 @@
         "--no-deps",
         "."
       ],
+      "id": "install",
       "timeout": 120
     },
     {
-      "id": "tests",
       "argv": [
         "python",
         "-m",
@@ -164,16 +31,173 @@
         "-s",
         "tests"
       ],
+      "id": "tests",
       "timeout": 120
     }
   ],
-  "claims": [
-    {
-      "description": "The release processing core and local web API satisfy the bundled positive and negative regression contracts",
-      "commands": [
-        "install",
-        "tests"
-      ]
+  "exclude": [
+    "build/**",
+    "dist/**"
+  ],
+  "include": [
+    "*.json",
+    ".github/workflows/*.yml",
+    "docs/assets/*.svg",
+    "packaging/**",
+    "scripts/**"
+  ],
+  "mode": "source",
+  "reviewed_dynamic": {
+    "packaging/Releasecraft.pyw": {
+      "reason": "Explicitly launched platform bootstrap verifies its own bundled wheel and invokes the offline local installer; no selected project code is run."
+    },
+    "packaging/install.py": {
+      "reason": "Reviewed release construction or synthetic fixture code; dynamic paths are bounded to explicit output, temporary builds, or bundled installer resources."
+    },
+    "scripts/build_distributions.py": {
+      "reason": "Reviewed release construction or synthetic fixture code; dynamic paths are bounded to explicit output, temporary builds, or bundled installer resources."
+    },
+    "scripts/check_distribution.py": {
+      "reason": "Explicit opt-in execution of trusted release bundles, bounded temporary extraction and installed CLI checks."
+    },
+    "src/releasecraft/__init__.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/__main__.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/analyze.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/archive.py": {
+      "reason": "Reviewed bounded streaming or exact-decision implementation and synthetic temporary regression fixtures; paths are explicit selected sources, owned work or local policy inputs. No selected project code is executed during analysis."
+    },
+    "src/releasecraft/build.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/cli.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/desktop.py": {
+      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
+    },
+    "src/releasecraft/diagnostics.py": {
+      "reason": "Bounded deterministic summaries of private evidence; no external file or model access."
+    },
+    "src/releasecraft/directory.py": {
+      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
+    },
+    "src/releasecraft/documentation.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/i18n.py": {
+      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
+    },
+    "src/releasecraft/managed.py": {
+      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
+    },
+    "src/releasecraft/native.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/operation.py": {
+      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
+    },
+    "src/releasecraft/policy.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/preferences.py": {
+      "reason": "Reviewed local desktop/controller implementation; selected source, owned output and private user-state paths are explicit bounded inputs. No selected project code is executed by the interface."
+    },
+    "src/releasecraft/residue.py": {
+      "reason": "Reviewed bounded streaming or exact-decision implementation and synthetic temporary regression fixtures; paths are explicit selected sources, owned work or local policy inputs. No selected project code is executed during analysis."
+    },
+    "src/releasecraft/review.py": {
+      "reason": "Reviewed bounded streaming or exact-decision implementation and synthetic temporary regression fixtures; paths are explicit selected sources, owned work or local policy inputs. No selected project code is executed during analysis."
+    },
+    "src/releasecraft/review_ui.py": {
+      "reason": "Reviewed bounded streaming or exact-decision implementation and synthetic temporary regression fixtures; paths are explicit selected sources, owned work or local policy inputs. No selected project code is executed during analysis."
+    },
+    "src/releasecraft/safety.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/storage.py": {
+      "reason": "Reviewed bounded private-state accounting, creation journals and retention controls, or synthetic temporary regression fixtures. Unknown content is never adopted; no selected project code is executed."
+    },
+    "src/releasecraft/storage_ui.py": {
+      "reason": "Reviewed bounded private-state accounting, creation journals and retention controls, or synthetic temporary regression fixtures. Unknown content is never adopted; no selected project code is executed."
+    },
+    "src/releasecraft/streaming.py": {
+      "reason": "Reviewed bounded streaming or exact-decision implementation and synthetic temporary regression fixtures; paths are explicit selected sources, owned work or local policy inputs. No selected project code is executed during analysis."
+    },
+    "src/releasecraft/validate.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/web.py": {
+      "reason": "Reviewed file-processing implementation; variable paths are explicit caller inputs or bounded work files. Bundled UI is declared as package data."
+    },
+    "src/releasecraft/windows.py": {
+      "reason": "Reviewed platform-safety implementation and regression fixtures; variable paths refer only to explicit selected sources or generated temporary files."
+    },
+    "tests/test_adversarial_round.py": {
+      "reason": "Reviewed synthetic file-set, mutation and archive-boundary fixtures; no external project code or services are used."
+    },
+    "tests/test_agent_handoff.py": {
+      "reason": "Reviewed bounded streaming or exact-decision implementation and synthetic temporary regression fixtures; paths are explicit selected sources, owned work or local policy inputs. No selected project code is executed during analysis."
+    },
+    "tests/test_batch_regressions.py": {
+      "reason": "Independently authored bounded temporary fixtures for literal dependency, generated-file and maintenance regression checks; no upstream project code is executed."
+    },
+    "tests/test_core.py": {
+      "reason": "Reviewed synthetic temporary-directory fixtures; no undeclared project resource is required."
+    },
+    "tests/test_desktop.py": {
+      "reason": "Reviewed synthetic temporary fixtures for desktop, translation, path boundaries or static dependency contracts. No upstream code or services are executed."
+    },
+    "tests/test_distribution.py": {
+      "reason": "Reviewed release construction or synthetic fixture code; dynamic paths are bounded to explicit output, temporary builds, or bundled installer resources."
+    },
+    "tests/test_local_readers.py": {
+      "reason": "Reviewed synthetic temporary fixtures for desktop, translation, path boundaries or static dependency contracts. No upstream code or services are executed."
+    },
+    "tests/test_managed_output.py": {
+      "reason": "Reviewed synthetic temporary fixtures for desktop, translation, path boundaries or static dependency contracts. No upstream code or services are executed."
+    },
+    "tests/test_native.py": {
+      "reason": "Reviewed synthetic temporary-directory fixtures; no undeclared project resource is required."
+    },
+    "tests/test_npm_config.py": {
+      "reason": "Synthetic bounded npm configuration fixtures, redacted findings and self-consistent negative archives; no npm execution or external source is required."
+    },
+    "tests/test_python_credentials.py": {
+      "reason": "Reviewed synthetic temporary fixtures for desktop, translation, path boundaries or static dependency contracts. No upstream code or services are executed."
+    },
+    "tests/test_review_regressions.py": {
+      "reason": "Reviewed platform-safety implementation and regression fixtures; variable paths refer only to explicit selected sources or generated temporary files."
+    },
+    "tests/test_runtime.py": {
+      "reason": "Reviewed synthetic runtime fixtures; each validation uses fresh venv and generated temp data."
+    },
+    "tests/test_scan_limits.py": {
+      "reason": "Synthetic scan-limit and CLI fixtures use only bounded temporary paths or mocked entries."
+    },
+    "tests/test_small_medium.py": {
+      "reason": "Independent synthetic project contracts use bounded temporary fixtures and execute only authored Python or Node examples after verified extraction."
+    },
+    "tests/test_storage.py": {
+      "reason": "Reviewed bounded private-state accounting, creation journals and retention controls, or synthetic temporary regression fixtures. Unknown content is never adopted; no selected project code is executed."
+    },
+    "tests/test_streaming_projects.py": {
+      "reason": "Reviewed bounded streaming or exact-decision implementation and synthetic temporary regression fixtures; paths are explicit selected sources, owned work or local policy inputs. No selected project code is executed during analysis."
+    },
+    "tests/test_ui_script.py": {
+      "reason": "Reviewed synthetic temporary-directory fixtures; no undeclared project resource is required."
+    },
+    "tests/test_upgrade_adversarial.py": {
+      "reason": "Reviewed bounded streaming or exact-decision implementation and synthetic temporary regression fixtures; paths are explicit selected sources, owned work or local policy inputs. No selected project code is executed during analysis."
+    },
+    "tests/test_web.py": {
+      "reason": "Reviewed synthetic temporary-directory fixtures; no undeclared project resource is required."
     }
-  ]
+  },
+  "schema": 1
 }

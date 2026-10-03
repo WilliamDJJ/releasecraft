@@ -17,10 +17,11 @@ import uuid
 import zipfile
 
 from .directory import Directory, identity
+from .streaming import hash_file, require_space
 from .safety import ReleaseError, atomic_json, canonical, digest, linked, read_safe, relative
 
-STATE_BYTES = 1024 * 1024 * 1024
-STAGE_BYTES = 640 * 1024 * 1024
+STATE_BYTES = None  # Active payload is constrained by available disk, not a project cap.
+STAGE_BYTES = None
 AUDIT_BYTES = 16 * 1024 * 1024
 TOTAL_AUDITS = 64 * 1024 * 1024
 AUDIT_COUNT = 20
@@ -79,7 +80,7 @@ class OwnedTree:
                 if row['kind'] == 'removed':
                     self.records.pop(name, None)
                 elif row['kind'] in ('file', 'directory'):
-                    if row['kind'] == 'file' and (type(row.get('size')) is not int or not 0 <= row['size'] <= STAGE_BYTES + AUDIT_BYTES):
+                    if row['kind'] == 'file' and (type(row.get('size')) is not int or row['size'] < 0):
                         raise StorageBlocked('Invalid private journal size')
                     self.records[name] = row
                 else:
@@ -198,7 +199,7 @@ class OwnedTree:
                     if row['kind'] == 'directory' and stat.S_ISDIR(info.st_mode):
                         stack.append(Path(entry.path))
                     elif row['kind'] == 'file' and stat.S_ISREG(info.st_mode) and info.st_nlink == 1:
-                        if info.st_size != row['size'] or digest(read_safe(folder, entry.name, row['size'])[0]) != row['sha256']:
+                        if info.st_size != row['size'] or hash_file(folder / entry.name) != row['sha256']:
                             raise StorageBlocked('Private content changed')
                     else:
                         raise StorageBlocked('Unsafe private entry')
@@ -289,7 +290,7 @@ class Storage:
 
     def capacity(self, reservation=0):
         used = measure(self.root)
-        if used['bytes'] + reservation > STATE_BYTES or shutil.disk_usage(self.root).free < reservation:
+        if (STATE_BYTES is not None and used['bytes'] + reservation > STATE_BYTES) or shutil.disk_usage(self.root).free < reservation:
             raise StorageBlocked('Private storage capacity exceeded')
         return used
 
@@ -321,11 +322,11 @@ class Storage:
         # UTF-8 names, manifests, ZIP headers and transformed notebook expansion
         # are bounded separately. Actual writes must fit this reservation too.
         selected = [r for r in plan['files'] if r['state'] in ('INCLUDE', 'TRANSFORM')]
-        total = sum(r['size'] * (6 if r['state'] == 'TRANSFORM' else 1) for r in selected)
+        total = sum(r.get('output_size', r['size'] * (6 if r['state'] == 'TRANSFORM' else 1)) for r in selected)
         total += sum(len(t.encode()) for t in plan.get('generated_files', {}).values())
         overhead = len(canonical(plan)) * 3 + sum(len(r['path'].encode()) * 12 + 2048 for r in selected) + 65536
         reserve = total * 2 + overhead
-        if reserve > STAGE_BYTES:
+        if STAGE_BYTES is not None and reserve > STAGE_BYTES:
             raise StorageBlocked('Private staging reservation limit')
         self.capacity(reserve + AUDIT_BYTES + JOURNAL_BYTES)
         tree.limit = tree.written + reserve + AUDIT_BYTES
@@ -393,7 +394,7 @@ class Storage:
 
     def snapshot(self):
         used = measure(self.root)
-        return {**used, 'limit_bytes': STATE_BYTES, 'jobs': list(reversed(self.index)), 'unverified_possible':True}
+        return {**used, 'limit_bytes': STATE_BYTES, 'free_bytes': shutil.disk_usage(self.root).free, 'jobs': list(reversed(self.index)), 'unverified_possible':True}
 
 
 def storage_status(state):

@@ -101,6 +101,11 @@ def translate(key, language="en", **values):
 
 
 def action_key(code):
+    if code == "insufficient-disk-space": return "action.space"
+    if code in ("review-decision-stale", "review-decision-missing"): return "action.stale"
+    if code in ("generated-test-output-review", "user-review-required"): return "action.review"
+    if code == "parser-file-limit": return "action.parser"
+    if code == "agent-config-needs-review": return "action.agent"
     if code.startswith(("scan-", "analysis-")): return "action.limit"
     if code in ("missing-license", "license-needs-review", "license-excluded"): return "action.license"
     if code == "sensitive-content": return "action.secret"
@@ -113,3 +118,53 @@ def action_key(code):
 
 EN.update({'storage.title': 'Storage / History', 'storage.help': 'Keep up to 20 private audits (64 MiB total), 100 compact summaries and 1 GiB private state. Export needed evidence before clearing. Public packages are never removed here.', 'storage.refresh': 'Refresh', 'storage.export': 'Export selected audit', 'storage.clean': 'Clean staging / expired', 'storage.clear': 'Clear full audits', 'storage.id': 'Run ID', 'storage.status': 'Result', 'storage.bytes': 'Audit bytes', 'storage.cleanup': 'Retention', 'storage.working': 'Checking owned private storage…', 'storage.unknown': 'Unregistered, changed or linked content is retained. An empty list does not mean all private storage is removable.', 'storage.unavailable': 'Private storage is busy, unsafe or over its inspection bound. Active operations and unknown content remain untouched.', 'storage.usage': 'Measured private bytes: {bytes} / {limit} · Entries: {entries}', 'storage.retained': 'Review needed', 'storage.audit': 'Full audit retained', 'storage.expired': 'Summary only', 'storage.cleaned': 'Maintenance completed. Unchanged registered staging and expired audits were eligible; review-needed content was retained.', 'storage.cleared': 'Eligible full audits cleared; compact summaries and public packages remain. Review-needed content was retained.', 'storage.exported': 'Exact private audit exported. Keep this evidence private.', 'storage.confirm': 'Clear eligible full private audits? Export needed evidence first. Public packages and compact summaries remain. Unknown, changed and active work is retained.', 'storage.wait': 'Please wait for the current storage operation to finish.', 'storage.warning': 'Package result is separate from cleanup: some private or pending content needs review. Open Storage / History.', 'storage.blocked': 'STORAGE_BLOCKED: private space, evidence limits or safe ownership could not be established. Inspect Storage / History; do not delete unknown content.', 'storage.state.RUNNING': 'Running', 'storage.state.INTERRUPTED': 'Interrupted', 'storage.state.CANDIDATE': 'Candidate', 'storage.state.BLOCKED': 'Blocked', 'storage.state.FAILED': 'Failed', 'storage.state.CANCELLED': 'Cancelled'})
 ZH.update({'storage.title': '存储 / 历史', 'storage.help': '最多保留 20 份完整私有审计（合计 64 MiB）、100 条摘要和 1 GiB 私有状态。清理前请导出需要的证据。此处不会删除公开发布包。', 'storage.refresh': '刷新', 'storage.export': '导出选中审计', 'storage.clean': '清理暂存 / 过期审计', 'storage.clear': '清除完整审计', 'storage.id': '运行标识', 'storage.status': '结果', 'storage.bytes': '审计字节', 'storage.cleanup': '保留状态', 'storage.working': '正在检查已登记的私有存储…', 'storage.unknown': '未登记、被修改或含链接的内容将保留。列表为空不代表所有私有存储都可以删除。', 'storage.unavailable': '私有存储忙碌、不安全或超出检查上限。正在运行的任务和未知内容不会被删除。', 'storage.usage': '已测量私有字节：{bytes} / {limit} · 条目：{entries}', 'storage.retained': '需要检查', 'storage.audit': '保留完整审计', 'storage.expired': '仅保留摘要', 'storage.cleaned': '维护已完成。仅处理登记且未变化的暂存及过期审计；需要检查的内容已保留。', 'storage.cleared': '符合条件的完整审计已清除；摘要和公开发布包保留。需要检查的内容已保留。', 'storage.exported': '已导出原始私有审计。请妥善保管，勿公开其中的私有证据。', 'storage.confirm': '清除符合条件的完整私有审计吗？请先导出需要的证据。公开发布包和摘要会保留。未知、被修改及运行中的内容不会被删除。', 'storage.wait': '请等待当前存储操作完成。', 'storage.warning': '发布结果与清理结果分开记录：部分私有或待发布内容需要检查。请打开“存储 / 历史”。', 'storage.blocked': 'STORAGE_BLOCKED：无法确认私有空间、证据上限或安全归属。请查看“存储 / 历史”，不要删除未知内容。', 'storage.state.RUNNING': '运行中', 'storage.state.INTERRUPTED': '已中断', 'storage.state.CANDIDATE': '候选包', 'storage.state.BLOCKED': '被阻断', 'storage.state.FAILED': '失败', 'storage.state.CANCELLED': '已取消'})
+
+
+EN.update({
+    "Reading": "Reading and hashing", "Extracting": "Extracting verified archive",
+    "PLANNED": "Plan complete — review contents before packaging",
+    "result.PLANNED": "Plan complete — review contents before packaging",
+    "storage.available_space": "available disk space",
+    "storage.help": "Keep up to 20 private audits (64 MiB total) and 100 summaries. Active staging is sized against available disk space. Export needed evidence before clearing. Public packages are never removed here.",
+    "review.analyze": "Analyze first", "review.title": "Review release contents",
+    "review.help": "Inspect every decision. Select files, enter a reason, and save a policy for this tool and other people or agents to reuse. Safety, dependencies and license gates still apply. No original file is deleted. CANDIDATE is not runtime verified.",
+    "review.path": "File", "review.state": "Decision", "review.reason": "Review reason", "review.size": "Bytes",
+    "review.include": "Include", "review.exclude": "Exclude", "review.review": "Needs review",
+    "review.save": "Save policy…", "review.saved": "Policy saved and selected. Analyze again to apply it. Decisions are tied to exact file hashes; changes require a fresh review.",
+    "review.rejected": "Enter a reason and select ordinary files. Secrets, private state, missing rights and parser/safety findings require correction, not inclusion approval.",
+    "review.save_error": "Choose a new policy filename outside the selected project. Existing files are not overwritten.",
+    "review.load_error": "The private plan is unavailable or its integrity check failed. Analyze the project again.",
+})
+ZH.update({
+    "Reading": "读取并计算哈希", "Extracting": "解压已验证的归档",
+    "PLANNED": "计划完成，请先检查发布内容", "result.PLANNED": "计划完成，请先检查发布内容",
+    "storage.available_space": "可用磁盘空间",
+    "storage.help": "最多保留 20 份私有审计（合计 64 MiB）和 100 条摘要。当前暂存按可用磁盘空间预检。清理前请导出需要的证据；此处不会删除公开发布包。",
+    "review.analyze": "先分析", "review.title": "检查发布内容",
+    "review.help": "逐项检查文件决定。选择文件、填写理由并保存规则，供自己、其他人或 AI 重复使用。秘密、依赖及许可检查仍生效，不会删除原文件。候选包不表示已经运行验证。",
+    "review.path": "文件", "review.state": "决定", "review.reason": "检查理由", "review.size": "字节",
+    "review.include": "包含", "review.exclude": "排除", "review.review": "待检查",
+    "review.save": "保存规则…", "review.saved": "规则已保存并选中。再次分析后生效；决定绑定文件哈希，文件改变后需要重新检查。",
+    "review.rejected": "请填写理由并选择普通文件。秘密、私有状态、许可不明或解析安全问题需要修正，不能直接批准包含。",
+    "review.save_error": "请选择项目目录之外的新规则文件名；不会覆盖已有文件。",
+    "review.load_error": "私有计划无法读取或完整性检查失败，请重新分析。",
+})
+
+EN["Copying bytes"] = "Copying file contents"
+ZH["Copying bytes"] = "复制文件内容"
+EN.update({
+    'review.pending': 'Pending',
+    'action.space': 'There is insufficient free disk space for staging and verification. Choose a disk with enough space; no incomplete package is approved.',
+    'action.stale': 'The reviewed file changed or disappeared. Compare the plans and renew its decision after checking the new content.',
+    'action.review': 'Review whether this file is a required input or generated output. Save a decision and reason, then analyze again.',
+    'action.parser': 'This code or structured document exceeds the complete-parser bound. It was not approved from a prefix; split the document or choose a coherent component.',
+    'action.agent': 'Keep only shareable agent settings. Correct private credentials in source; include cannot approve them.',
+})
+ZH.update({
+    'review.pending': '待保存',
+    'action.space': '可用磁盘空间不足以暂存和校验，请选择空间足够的磁盘。不会批准不完整的发布包。',
+    'action.stale': '已审阅文件发生变化或消失，请比较计划，检查新内容后更新决定。',
+    'action.review': '请判断该文件是必需输入还是生成输出，保存决定和理由，再次分析。',
+    'action.parser': '此代码或结构化文档超出完整解析边界，没有仅凭前缀批准。请拆分文档或选择功能完整的组件。',
+    'action.agent': '仅保留可共享的智能体配置。请在源码中修正私有凭据，包含规则不能批准凭据。',
+})

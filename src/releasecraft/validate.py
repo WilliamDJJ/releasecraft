@@ -12,8 +12,10 @@ import sys
 import tempfile
 import uuid
 import venv
-from .build import archive_bytes, extract_verified, verify_archive
-from .safety import ReleaseError, read_safe, digest
+from .build import extract_verified, verify_archive
+from .archive import frozen_archive
+from .streaming import copy_safe, require_space
+from .safety import ReleaseError
 
 
 def run_command(argv, cwd, timeout, env):
@@ -87,7 +89,11 @@ def run_command(argv, cwd, timeout, env):
 
 
 def validate(archive, backend="docker", image=None, trusted=False, wheelhouse=None):
-    archive = archive_bytes(archive)
+    with frozen_archive(archive) as frozen:
+        return _validate(frozen, backend, image, trusted, wheelhouse)
+
+
+def _validate(archive, backend, image, trusted, wheelhouse):
     report = verify_archive(archive)
     if report["status"] == "FAILED":
         return report
@@ -187,14 +193,11 @@ def validate(archive, backend="docker", image=None, trusted=False, wheelhouse=No
             for item in candidates:
                 if item.suffix != ".whl":
                     raise ReleaseError("Wheelhouse may contain only wheels")
-                data, _ = read_safe(origin, item.name, 128 * 1024 * 1024)
-                total += len(data)
-                if total > 256 * 1024 * 1024:
-                    raise ReleaseError("Wheelhouse exceeds limit")
-                (wheels / item.name).write_bytes(data)
-                report["declared_dependency_wheels"].append(
-                    {"filename": item.name, "sha256": digest(data)}
-                )
+                require_space(wheels, item.stat().st_size)
+                with (wheels / item.name).open("xb") as target:
+                    sha, size, _ = copy_safe(origin, item.name, target)
+                total += size
+                report["declared_dependency_wheels"].append({"filename": item.name, "sha256": sha})
             env["PIP_NO_INDEX"] = "1"
             env["PIP_FIND_LINKS"] = wheels.as_uri()
         for command in commands:

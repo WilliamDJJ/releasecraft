@@ -1,7 +1,23 @@
 <p align="center"><img src="docs/assets/banner.svg" alt="Releasecraft — 可检查、可重建的源码发布包" width="100%"></p>
 <p align="center"><strong>保留必要功能，让每个取舍有依据，让发布包接受验证。</strong></p>
-<p align="center"><a href="CHANGELOG.md"><img src="docs/assets/version.svg" alt="版本 1.0.0"></a> <a href="#快速开始"><img src="docs/assets/python.svg" alt="Python 3.11+"></a> <a href="LICENSE"><img src="docs/assets/license.svg" alt="MIT 许可证"></a></p>
+<p align="center"><a href="CHANGELOG.md"><img src="docs/assets/version.svg" alt="版本 1.1.0"></a> <a href="#快速开始"><img src="docs/assets/python.svg" alt="Python 3.11+"></a> <a href="LICENSE"><img src="docs/assets/license.svg" alt="MIT 许可证"></a></p>
 <p align="center"><a href="README.md">English</a> · <strong>简体中文</strong> · <a href="docs/DOWNLOADS.md">下载说明</a> · <a href="docs/DESKTOP.md">桌面界面</a> · <a href="docs/POLICY.md">配置参考</a></p>
+
+## AI 已经把项目做出来了，下一次也应打出同样的发布包
+
+项目能运行，不代表整个工作目录都适合公开。目录中可能混有本地凭据、实验脚本、生成报告和并行开发副本。
+每次让不同助手“清理一下”，得到的文件集合可能不同。Releasecraft 把保留、排除和待审阅的理由保存为明确规则，
+让另一个人或智能体无需读取原来的私人对话，也能复现同一份源码发布包。
+
+先点击 **先分析**，再打开 **检查发布内容**。对不明确的文件填写理由并保存策略，重新分析后再准备发布包。
+也可以直接使用默认 **准备发布包**；真正不明确的资源、许可或敏感内容仍会阻断。策略不会偷偷自动加载。
+
+已审阅决定绑定文件哈希；文件变化后必须重新审阅。测试、样例、快照、依赖锁文件和必需数据不会因为像“杂物”就丢弃。
+共享智能体说明与认证状态分别处理，不能把整个智能体目录一概删除。原始项目文件始终保留。
+
+大文件按块扫描、复制、写入 ZIP、校验和解压，不再使用默认 256 MiB 项目上限；会检查实际可用磁盘空间。
+代码解析、归档元数据、文件数量和证据仍有独立边界，达到边界明确阻断，不能把未扫描部分当作已通过。
+详见[文件决策](docs/AI_PROJECTS.md)、[审阅与复现](docs/REVIEW.md)和[资源边界](docs/SCAN_LIMITS.md)。
 
 ## 从项目目录到可检查的源码发布包
 
@@ -13,7 +29,7 @@ Releasecraft 面向 Python、Notebook、数据处理及常见 Node.js/TypeScript
 
 ## 下载与版本
 
-首个公开发行版本的 Python 包号为 **1.0.0**，Git 标签为 **v1.0**。请从[官方 GitHub Release](https://github.com/WilliamDJJ/releasecraft/releases/tag/v1.0)下载，并按[下载说明](docs/DOWNLOADS.md)核对校验和。[源码仓库](https://github.com/WilliamDJJ/releasecraft)包含各平台共用的代码、测试和文档。
+当前版本的 Python 包号为 **1.1.0**，Git 标签为 **v1.1**。请从[官方 GitHub Release](https://github.com/WilliamDJJ/releasecraft/releases/tag/v1.1)下载，并按[下载说明](docs/DOWNLOADS.md)核对校验和。[源码仓库](https://github.com/WilliamDJJ/releasecraft)包含各平台共用的代码、测试和文档。
 
 | 平台 | 安装与启动 | 前提 |
 | --- | --- | --- |
@@ -94,7 +110,7 @@ releasecraft validate ../demo-release/release.zip --backend trusted --trust-proj
 - [扫描限制](docs/SCAN_LIMITS.md)：条目、字节、深度和证据边界
 - [验证契约](docs/VERIFICATION.md)：回归和平台验收要求
 - [发布指南](docs/RELEASING.md)：可重复构建、验收和人工发布
-- [更新记录](CHANGELOG.md)：首个公开候选版本的功能
+- [更新记录](CHANGELOG.md)：各公开版本的功能
 
 ## 测试与构建
 

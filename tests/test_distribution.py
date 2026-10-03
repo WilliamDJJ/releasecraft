@@ -211,18 +211,18 @@ class DistributionTests(unittest.TestCase):
     def test_release_links_target_official_version(self):
         doc = (ROOT / "docs/DOWNLOADS.md").read_text(encoding="utf-8")
         base = "https://github.com/WilliamDJJ/releasecraft/releases/"
-        self.assertIn(base + "tag/v1.0", doc)
+        self.assertIn(base + "tag/v1.1", doc)
         for asset in (
-            "releasecraft-1.0.0-windows.zip",
-            "releasecraft-1.0.0-linux.tar.gz",
-            "releasecraft-1.0.0-source.zip",
-            "releasecraft-1.0.0-py3-none-any.whl",
+            "releasecraft-1.1.0-windows.zip",
+            "releasecraft-1.1.0-linux.tar.gz",
+            "releasecraft-1.1.0-source.zip",
+            "releasecraft-1.1.0-py3-none-any.whl",
             "SHA256SUMS",
             "VALIDATION.md",
         ):
-            self.assertIn(base + "download/v1.0/" + asset, doc)
+            self.assertIn(base + "download/v1.1/" + asset, doc)
         for name in ("README.md", "README.zh-CN.md"):
-            self.assertIn(base + "tag/v1.0", (ROOT / name).read_text(encoding="utf-8"))
+            self.assertIn(base + "tag/v1.1", (ROOT / name).read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

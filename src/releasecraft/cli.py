@@ -12,6 +12,7 @@ from .policy import load_policy
 from .diagnostics import plan_summary
 from .safety import ReleaseError, atomic_json, canonical
 from .validate import validate
+from .streaming import SpaceError
 
 
 def main(argv=None):
@@ -32,6 +33,9 @@ def main(argv=None):
                 "--details", action="store_true",
                 help="Also print full private evidence instead of the grouped summary",
             )
+    p = sub.add_parser("review-policy", help="Export the current reviewed policy from a frozen plan")
+    p.add_argument("plan")
+    p.add_argument("--output", required=True)
     p = sub.add_parser("build")
     p.add_argument("source")
     p.add_argument("--plan", required=True)
@@ -64,6 +68,12 @@ def main(argv=None):
                 if args.command == "plan"
                 else analyze(args.source, policy)
             )
+        elif args.command == "review-policy":
+            from .review import review_policy
+            policy = review_policy(json.loads(Path(args.plan).read_text("utf8")))
+            with Path(args.output).open("xb") as target:
+                target.write(canonical(policy))
+            result = {"status": "EXPORTED", "detail": "Review the policy before sharing; unchanged decisions do not approve unresolved files."}
         elif args.command == "build":
             result = assemble(
                 args.source, json.loads(Path(args.plan).read_text("utf8")), args.output
@@ -104,9 +114,12 @@ def main(argv=None):
         sys.stdout.buffer.write(canonical(displayed))
         return (
             0
-            if result.get("status") in (None, "PLANNED", "READY")
+            if result.get("status") in (None, "PLANNED", "READY", "EXPORTED")
             else (3 if result.get("status") == "CANDIDATE" else 2)
         )
+    except SpaceError:
+        print(json.dumps({"status": "BLOCKED", "error": "insufficient-disk-space"}))
+        return 2
     except (ReleaseError, OSError, ValueError, KeyError, TypeError):
         # Exception strings may contain sensitive paths or source content.
         print(

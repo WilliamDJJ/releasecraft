@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+- Stream large source resources, archive verification/extraction and desktop staging with disk checks and cancellation
+- Replace default payload byte ceilings with explicit optional budgets; retain parser, metadata and evidence safety limits
+- Persist hash-bound include/exclude/review decisions and compare content, policy and tool identity across plans
+- Add bilingual Analyze first and file review/export controls to the native desktop workflow
+- Distinguish shared agent instructions and test snapshots from private state and ambiguous generated output
+- Preserve citation metadata, exclude private Git worktree pointers, and recognize immediate generated-JSON context reads conservatively
+
+
 ## 1.0.0 — First public release
 
 - Add a compact native desktop workflow with folder selection, measured progress, cancellation, problem details and output navigation

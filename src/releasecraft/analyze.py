@@ -11,9 +11,12 @@ import stat
 import tomllib
 from urllib.parse import unquote
 from .policy import VERSION, load_policy
+from . import __version__
+from .streaming import snapshot, PARSE_BYTES, CACHE_BYTES
 from .operation import signal
 from .diagnostics import EvidenceBudget, EvidenceLimit, blocker_summary
 from .native import resource_edges
+from .residue import context_rule, playwright_context, agent_config_safe
 from .documentation import draft_readme
 from .safety import (
     ReleaseError,
@@ -23,7 +26,6 @@ from .safety import (
     findings,
     linked,
     npm_preferences,
-    read_safe,
     relative,
     safe_notebook,
     separate,
@@ -83,7 +85,7 @@ META = {
     ".editorconfig",
 }
 TRANSIENT = {".log", ".pyc", ".pyo", ".tmp", ".bak", ".orig"}
-MAINTENANCE = {".travis.yml", ".travis.yaml", ".eslintrc.json", "tox.ini"}
+MAINTENANCE = {".travis.yml", ".travis.yaml", ".eslintrc.json", "tox.ini", "CITATION.cff"}
 
 
 def match(path, patterns):
@@ -96,13 +98,13 @@ def match(path, patterns):
 
 MAX_SCAN_ENTRIES = 20000
 MAX_DIRECTORY_ENTRIES = 4096
-MAX_SCAN_BYTES = 256 * 1024 * 1024
+MAX_SCAN_BYTES = None  # Optional operator budget; no fixed project byte cap.
 MAX_INVENTORY_ERRORS = 1000
 MAX_SCAN_DEPTH = 64
 MAX_ANALYSIS_EVIDENCE = 20000
 
 
-def inventory(root, limit, *, audit=None, operation=None):
+def inventory(root, limit=None, *, audit=None, operation=None, byte_limit=None):
     """Bounded deterministic traversal; one lookahead entry may detect overflow.
 
     Every directory entry observed counts, including invalid/unreadable entries.
@@ -114,6 +116,8 @@ def inventory(root, limit, *, audit=None, operation=None):
     root = Path(root).resolve()
     files, ignored, errors = {}, [], []
     seen = set()
+    cache_remaining = CACHE_BYTES
+    byte_limit = MAX_SCAN_BYTES if byte_limit is None else byte_limit
     scan = {
         "complete": True,
         "traversal_complete": True,
@@ -132,7 +136,9 @@ def inventory(root, limit, *, audit=None, operation=None):
         "limits": {
             "entries": MAX_SCAN_ENTRIES,
             "directory_entries": MAX_DIRECTORY_ENTRIES,
-            "bytes_reserved": MAX_SCAN_BYTES,
+            "bytes_reserved": byte_limit,
+            "parser_bytes_per_file": PARSE_BYTES,
+            "payload_cache_bytes": CACHE_BYTES,
             "error_details": MAX_INVENTORY_ERRORS,
             "depth": MAX_SCAN_DEPTH,
             "enumeration_lookahead_entries": 1,
@@ -210,12 +216,12 @@ def inventory(root, limit, *, audit=None, operation=None):
                             managed = owned_output(path, root, getattr(operation, "state_directory", None))
                             if not managed:
                                 raise ReleaseError("Unowned reserved output directory")
-                        if managed or entry.name in PRUNED or entry.name.endswith(".egg-info"):
+                        if managed or rel == ".claude/worktrees" or entry.name in PRUNED or entry.name.endswith(".egg-info"):
                             scan["pruned_directories"] += 1
                             ignored.append({
                                 "path": rel,
                                 "state": "EXCLUDE",
-                                "reason": "owned-releasecraft-output" if managed else "tool-cache-directory",
+                                "reason": "owned-releasecraft-output" if managed else "parallel-agent-checkouts" if rel == ".claude/worktrees" else "tool-cache-directory",
                                 "sha256": None,
                                 "size": 0,
                                 "executable": False,
@@ -228,19 +234,19 @@ def inventory(root, limit, *, audit=None, operation=None):
                     elif stat.S_ISREG(info.st_mode):
                         scan["regular_files_seen"] += 1
                         size = info.st_size
-                        if size < 0 or size > limit or info.st_nlink > 1:
+                        if size < 0 or (limit is not None and size > limit) or info.st_nlink > 1:
                             raise ReleaseError("Unsafe file or per-file size limit")
                         reservation = size + 1
-                        if reservation > MAX_SCAN_BYTES - scan["bytes_reserved"]:
+                        if byte_limit is not None and reservation > byte_limit - scan["bytes_reserved"]:
                             stop("scan-byte-limit")
                         scan["bytes_reserved"] += reservation
                         scan["read_attempts"] += 1
-                        data, executable = read_safe(root, rel, size)
-                        if len(data) != size:
-                            raise ReleaseError("Source changed during inventory")
-                        scan["bytes_retained"] += len(data)
+                        item = snapshot(root, rel, size, operation, cache=size <= cache_remaining)
+                        if item.cached is not None:
+                            cache_remaining -= len(item.cached)
+                        scan["bytes_retained"] += item.size
                         scan["files_read"] += 1
-                        files[rel] = (data, executable)
+                        files[rel] = item
                     else:
                         raise ReleaseError("Special file")
                 except (OSError, ReleaseError) as exc:
@@ -528,7 +534,15 @@ def dependencies(path, data, paths, policy, evidence=None, local_functions=None)
                     continue
                 if any(isinstance(node, ast.Call) and ast.unparse(node.func) not in allowed_writes for statement in writer.body for node in ast.walk(statement)):
                     continue
-                if not isinstance(reader, (ast.Expr, ast.Assign, ast.AnnAssign, ast.Assert)):
+                if isinstance(reader, ast.With):
+                    if len(reader.items) != 1:
+                        continue
+                    reading = reader.items[0].context_expr
+                    if (not isinstance(reading, ast.Call) or ast.unparse(reading.func) != "open"
+                            or literal_path(open_argument(reading, 0, "file")) != value
+                            or not all(isinstance(statement, (ast.Expr, ast.Assign, ast.AnnAssign, ast.Assert, ast.Pass)) for statement in reader.body)):
+                        continue
+                elif not isinstance(reader, (ast.Expr, ast.Assign, ast.AnnAssign, ast.Assert)):
                     continue
                 reader_nodes = list(ast.walk(reader))
                 if any(isinstance(node, (ast.Lambda, ast.GeneratorExp, ast.ListComp, ast.SetComp, ast.DictComp, ast.NamedExpr)) for node in reader_nodes):
@@ -813,7 +827,7 @@ def analyze(source, policy=None, *, operation=None):
     if not root.is_dir():
         raise ReleaseError("Source directory does not exist")
     scan = {}
-    files, ignored, errors = inventory(root, policy["max_file_bytes"], audit=scan, operation=operation)
+    files, ignored, errors = inventory(root, policy["max_file_bytes"], audit=scan, operation=operation, byte_limit=policy["max_scan_bytes"])
     budget = EvidenceBudget(MAX_ANALYSIS_EVIDENCE)
     rows, graph, warnings, kinds, licenses, generated = [], {}, [], [], [], {}
     blockers = budget.items()
@@ -824,7 +838,7 @@ def analyze(source, policy=None, *, operation=None):
     def local_functions(path):
         if path not in local_function_cache:
             names = set()
-            data = files[path][0]
+            data = files[path].content()
             if len(data) <= 1024 * 1024:
                 try:
                     tree = ast.parse(data)
@@ -852,6 +866,7 @@ def analyze(source, policy=None, *, operation=None):
 
     def classify():
         paths = set(files)
+        agent_contexts = playwright_context(files)
         if any(PurePosixPath(p).suffix.lower() in (".py", ".pyw") for p in paths):
             kinds.append("python")
         if any(PurePosixPath(p).suffix == ".ipynb" for p in paths):
@@ -869,7 +884,7 @@ def analyze(source, policy=None, *, operation=None):
             blockers.append({"code": "missing-license"})
         known_license = False
         for p in licenses:
-            t = files[p][0].decode("utf8", errors="replace")
+            t = files[p].content().decode("utf8", errors="replace")
             if (
                 "Permission is hereby granted" in t
                 or "Apache License" in t
@@ -878,13 +893,17 @@ def analyze(source, policy=None, *, operation=None):
                 known_license = True
         if licenses and not known_license:
             blockers.append({"code": "license-needs-review"})
-        for index, (path, (data, executable)) in enumerate(sorted(files.items())):
+        for index, path in enumerate(sorted(files)):
+            item = files[path]
+            data, executable = item.content(), item.executable
             signal(operation, "Analyzing", current=path, files=index, total_files=len(files), bytes_read=scan["bytes_retained"])
             name = PurePosixPath(path).name
             suf = PurePosixPath(path).suffix
             state = "INCLUDE"
             reason = "conservative-source-maintenance"
             transformed = data
+            category, evidence_reason = context_rule(path, files, agent_contexts)
+            decision = policy["decisions"].get(path)
             if (
                 any(
                     p.lower() in ("vendor", "third_party", "third-party")
@@ -897,6 +916,13 @@ def analyze(source, policy=None, *, operation=None):
             elif name.startswith(".env") and name not in (".env.example", ".env.template"):
                 state = "EXCLUDE"
                 reason = "private-environment"
+            elif category == "private":
+                state, reason = "EXCLUDE", evidence_reason
+            elif decision and decision["sha256"] != item.sha256:
+                state, reason = "UNRESOLVED", "review-decision-stale"
+            elif decision:
+                state = {"include": "INCLUDE", "exclude": "EXCLUDE", "review": "UNRESOLVED"}[decision["action"]]
+                reason = "user-review-required" if state == "UNRESOLVED" else "reviewed-" + decision["action"]
             elif match(path, policy["exclude"]):
                 state = "EXCLUDE"
                 reason = "explicit-exclude"
@@ -905,6 +931,10 @@ def analyze(source, policy=None, *, operation=None):
                 reason = "explicit-external"
             elif match(path, policy["include"]) or path in policy["resources"]:
                 reason = "explicit-include"
+            elif category == "shared":
+                reason = evidence_reason
+            elif category == "review":
+                state, reason = "UNRESOLVED", evidence_reason
             elif suf in TRANSIENT or name in (".DS_Store", "Thumbs.db"):
                 state = "EXCLUDE"
                 reason = "transient-artifact"
@@ -947,9 +977,11 @@ def analyze(source, policy=None, *, operation=None):
                 except (ValueError, TypeError, ReleaseError):
                     state = "UNRESOLVED"
                     reason = "invalid-notebook"
+            if state not in ("EXCLUDE", "EXTERNAL") and not agent_config_safe(path, data):
+                state, reason = "UNRESOLVED", "agent-config-needs-review"
             python_source = Path(path).suffix.lower() in (".py", ".pyw")
-            raw_findings = findings(data, python_source=python_source)
-            public_findings = findings(transformed, python_source=python_source)
+            raw_findings = item.findings
+            public_findings = raw_findings if transformed is data else findings(transformed, python_source=python_source)
             if state not in ("EXCLUDE", "EXTERNAL") and (
                 public_findings or findings(path.encode())
             ):
@@ -957,23 +989,26 @@ def analyze(source, policy=None, *, operation=None):
                 reason = "sensitive-content"
             if (
                 state not in ("EXCLUDE", "EXTERNAL")
-                and b"\x00" in transformed
+                and (item.binary if transformed is data else b"\x00" in transformed)
                 and path not in policy["resources"]
                 and reason not in (
-                    "sensitive-content", "third-party-provenance", "npm-config-needs-review"
+                    "sensitive-content", "third-party-provenance", "npm-config-needs-review", "agent-config-needs-review", "playwright-baseline-input"
                 )
             ):
                 state = "UNRESOLVED"
                 reason = "binary-needs-classification"
             row = {
                 "path": path,
-                "sha256": digest(data),
-                "output_sha256": digest(transformed),
-                "size": len(data),
+                "sha256": item.sha256,
+                "output_sha256": item.sha256 if transformed is data else digest(transformed),
+                "size": item.size,
+                "output_size": item.size if transformed is data else len(transformed),
                 "executable": executable,
                 "state": state,
                 "reason": reason,
                 "kind": "file",
+                "category": category or ("generated" if reason == "transient-artifact" else "source-or-resource"),
+                "decision": decision,
                 "findings": budget.items(),
             }
             rows.append(row)
@@ -981,6 +1016,10 @@ def analyze(source, policy=None, *, operation=None):
             graph[path] = {
                 key: budget.items() for key in ("edges", "unresolved", "imports")
             }
+            if item.size > PARSE_BYTES:
+                if state not in ("EXCLUDE", "EXTERNAL") and (suf in SOURCE | DOC | {".json", ".toml", ".yaml", ".yml"} or name in META):
+                    row["state"], row["reason"] = "UNRESOLVED", "parser-file-limit"
+                continue
             edges, unknown, imports = dependencies(
                 path, transformed, paths, policy, graph[path], local_functions
             )
@@ -1006,8 +1045,10 @@ def analyze(source, policy=None, *, operation=None):
                 for e in info["edges"]:
                     target = by_path[e["target"]]
                     if (
-                        target["state"] == "UNRESOLVED"
+                        (target["state"] == "UNRESOLVED" or (target["state"] == "EXCLUDE" and target["reason"] == "transient-artifact"))
                         and (
+                            target["reason"] == "transient-artifact"
+                            or
                             target["reason"] == "unclassified-resource"
                             or (target["reason"] == "binary-needs-classification" and e["kind"] != "path-literal")
                         )
@@ -1033,6 +1074,9 @@ def analyze(source, policy=None, *, operation=None):
         for lic in licenses:
             if by_path[lic]["state"] not in ("INCLUDE", "TRANSFORM"):
                 blockers.append({"code": "license-excluded", "path": lic})
+        for reviewed_path in policy["decisions"]:
+            if reviewed_path not in paths:
+                blockers.append({"code": "review-decision-missing", "path": reviewed_path})
         for resource in policy["resources"]:
             if resource not in paths:
                 blockers.append({"code": "explicit-resource-missing", "path": resource})
@@ -1061,6 +1105,10 @@ def analyze(source, policy=None, *, operation=None):
         analysis_complete = False
         analysis_stop_reason = "analysis-evidence-limit"
         list.append(blockers, {"code": "analysis-evidence-limit", "analysis_complete": False})
+    except (OSError, ReleaseError):
+        analysis_complete = False
+        analysis_stop_reason = "source-changed-or-unreadable"
+        list.append(blockers, {"code": "source-changed-or-unreadable", "analysis_complete": False})
     except RecursionError:
         analysis_complete = False
         analysis_stop_reason = "analysis-depth-limit"
@@ -1069,13 +1117,15 @@ def analyze(source, policy=None, *, operation=None):
         # Snapshot every retained payload, including files not reached by analysis.
         # Pending rows cannot be mistaken for approved publication decisions.
         recorded = {row["path"] for row in rows}
-        for index, (path, (data, executable)) in enumerate(sorted(files.items())):
+        for index, path in enumerate(sorted(files)):
+            item = files[path]
+            executable = item.executable
             signal(operation, "Analyzing", current=path, files=index, total_files=len(files), bytes_read=scan["bytes_retained"])
             if path not in recorded:
-                sha = digest(data)
+                sha = item.sha256
                 rows.append({
                     "path": path, "sha256": sha, "output_sha256": sha,
-                    "size": len(data), "executable": executable,
+                    "size": item.size, "output_size": item.size, "executable": executable,
                     "state": "UNRESOLVED", "reason": "analysis-incomplete",
                     "kind": "file", "findings": [],
                 })
@@ -1103,6 +1153,7 @@ def analyze(source, policy=None, *, operation=None):
     plan = {
         "schema": 1,
         "policy_version": VERSION,
+        "tool_version": __version__,
         "policy": policy,
         "project_types": kinds,
         "snapshot_sha256": snapshot,
@@ -1141,6 +1192,7 @@ def verify_plan(plan):
     if (
         plan.get("schema") != 1
         or plan.get("policy_version") != VERSION
+        or plan.get("tool_version") != __version__
         or digest(canonical(body)) != plan.get("plan_sha256")
     ):
         raise ReleaseError("Plan integrity or policy version mismatch")
@@ -1153,4 +1205,8 @@ def plan_diff(before, after):
         "added": sorted(set(b) - set(a)),
         "removed": sorted(set(a) - set(b)),
         "changed": [p for p in sorted(set(a) & set(b)) if a[p] != b[p]],
+        "content_changed": [p for p in sorted(set(a) & set(b)) if a[p].get("sha256") != b[p].get("sha256")],
+        "decisions_changed": [p for p in sorted(set(a) & set(b)) if any(a[p].get(k) != b[p].get(k) for k in ("state", "reason", "output_sha256", "decision"))],
+        "tool_changed": before.get("tool_version") != after.get("tool_version"),
+        "policy_changed": before["policy"] != after["policy"],
     }

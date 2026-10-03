@@ -44,10 +44,20 @@ class EvidenceList(list):
 
 
 def next_action(code):
+    if code == "insufficient-disk-space":
+        return "Choose a disk with enough free space for staging, archive snapshots and extraction. No partial package is approved."
     if code.startswith(("scan-", "analysis-")):
         return "Choose a smaller coherent component root and analyze it again; this plan is incomplete."
     if code in ("missing-license", "license-needs-review", "license-excluded"):
         return "Supply or review the component's release license; a policy override cannot replace permission."
+    if code in ("generated-test-output-review", "user-review-required"):
+        return "Review whether this is a test input or generated output. Save an include/exclude decision with a reason; no original file is deleted."
+    if code in ("review-decision-stale", "review-decision-missing"):
+        return "The file changed or disappeared since review. Compare the new plan and renew the decision only after checking it."
+    if code == "agent-config-needs-review":
+        return "Keep only shareable agent configuration. Replace private credentials with environment references in the original project before packaging."
+    if code == "parser-file-limit":
+        return "This code or structured document exceeds the parser memory bound; large opaque resources are supported. Split the document or declare a coherent component; it was not approved from a prefix."
     if code == "sensitive-content":
         return "Remove the detected secret or private content from selected source, then analyze again."
     if code == "npm-config-needs-review":

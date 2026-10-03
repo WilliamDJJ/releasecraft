@@ -73,7 +73,7 @@ class StorageWindow:
         if not self.data or self.data.get('status')=='UNAVAILABLE':
             self.usage.configure(text=self.tr('storage.unavailable') if self.data else '')
             return
-        self.usage.configure(text=self.tr('storage.usage',bytes=self.data['bytes'],limit=self.data['limit_bytes'],entries=self.data['entries']))
+        self.usage.configure(text=self.tr('storage.usage',bytes=self.data['bytes'],limit=self.data['limit_bytes'] if self.data['limit_bytes'] is not None else self.tr('storage.available_space'),entries=self.data['entries']))
         selected=self.table.selection()
         self.table.delete(*self.table.get_children())
         for row in self.data['jobs']:

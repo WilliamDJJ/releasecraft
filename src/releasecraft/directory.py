@@ -112,6 +112,20 @@ class Directory:
         self.check()
         return written
 
+    def copy_new(self, name, source, expected, operation=None):
+        from .streaming import copy_safe
+        self.check()
+        name = self.name(name)
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(self.path / name, flags, 0o600) if self.fd is None else os.open(name, flags, 0o600, dir_fd=self.fd)
+        with os.fdopen(fd, "wb") as target:
+            copy_safe(source.parent, source.name, target, expected=expected, operation=operation)
+            target.flush()
+            os.fsync(target.fileno())
+            stamp = identity(os.fstat(target.fileno()))
+        self.check()
+        return stamp
+
     def commit_directory(self, temporary, final):
         self.check()
         self.name(temporary)
@@ -138,6 +152,7 @@ class Directory:
         again at the published location before reporting success. This is not a sandbox
         against another process running with the same user's authority.
         """
+        from .streaming import hash_stream, hash_file
         self.check()
         self.name(temporary)
         self.name(final)
@@ -183,7 +198,7 @@ class Directory:
                 info = os.fstat(fd)
                 if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or identity(info) != stamp or info.st_size != size:
                     raise ReleaseError('Publication file was replaced')
-                if digest(stream.read(size + 1)) != sha:
+                if hash_stream(stream, size) != sha:
                     raise ReleaseError('Publication content changed')
             if os.name == 'nt':
                 for stream in streams:
@@ -211,11 +226,11 @@ class Directory:
             if {p.name for p in islice(final_path.iterdir(), len(expected_files) + 1)} != set(expected_files):
                 raise ReleaseError('Published file set changed')
             for name, (stamp, sha, size) in expected_files.items():
-                if identity((final_path / name).lstat()) != stamp or digest(read_safe(final_path, name, size)[0]) != sha:
+                if identity((final_path / name).lstat()) != stamp or hash_file(final_path / name) != sha:
                     raise ReleaseError('Published content changed')
             for stream, (stamp, sha, size) in zip(streams, expected_files.values()):
                 stream.seek(0)
-                if digest(stream.read(size + 1)) != sha or identity(os.fstat(stream.fileno())) != stamp:
+                if hash_stream(stream, size) != sha or identity(os.fstat(stream.fileno())) != stamp:
                     raise ReleaseError('Publication changed during commit')
             self.check()
         finally:

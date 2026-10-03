@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import hashlib
+from contextlib import contextmanager
 import ast
 import json
 import os
@@ -78,13 +79,16 @@ def linked(path):
     )
 
 
-def read_safe(root, rel, limit=16 * 1024 * 1024):
+@contextmanager
+def open_safe(root, rel, limit=None):
     relative(rel)
     root = Path(root).absolute()
     if os.name == "nt":
-        from .windows import read_locked
+        from .windows import open_locked
 
-        return read_locked(root, rel, limit)
+        with open_locked(root, rel, limit) as opened:
+            yield opened
+        return
     path = root
     for part in PurePosixPath(rel).parts:
         path /= part
@@ -95,7 +99,7 @@ def read_safe(root, rel, limit=16 * 1024 * 1024):
         raise ReleaseError("Only regular files are supported")
     if before.st_nlink > 1:
         raise ReleaseError("Hard-linked files require an independent copy")
-    if before.st_size > limit:
+    if limit is not None and before.st_size > limit:
         raise ReleaseError("File exceeds bounded scan limit")
     if os.name == "posix":
         directory = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -114,7 +118,11 @@ def read_safe(root, rel, limit=16 * 1024 * 1024):
         fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
     with os.fdopen(fd, "rb") as stream:
         opened = os.fstat(stream.fileno())
-        data = stream.read(limit + 1)
+        if (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns, opened.st_ctime_ns) != (
+            before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns
+        ) or opened.st_nlink != 1:
+            raise ReleaseError("Source changed before read")
+        yield stream, opened
         after = os.fstat(stream.fileno())
     end = path.stat()
 
@@ -122,12 +130,18 @@ def read_safe(root, rel, limit=16 * 1024 * 1024):
         return (x.st_dev, x.st_ino, x.st_size, x.st_mtime_ns, x.st_ctime_ns)
 
     if (
-        len(data) > limit
-        or identity(before) != identity(opened)
+        identity(before) != identity(opened)
         or identity(opened) != identity(after)
         or identity(after) != identity(end)
     ):
         raise ReleaseError("Source changed during read")
+
+
+def read_safe(root, rel, limit=16 * 1024 * 1024):
+    with open_safe(root, rel, limit) as (stream, before):
+        data = stream.read(limit + 1)
+        if len(data) > limit:
+            raise ReleaseError("Source changed during read")
     return data, bool(before.st_mode & 0o111)
 
 

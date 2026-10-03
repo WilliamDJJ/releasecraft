@@ -5,11 +5,12 @@ import json
 from pathlib import Path
 from .safety import ReleaseError, relative
 
-VERSION = "1.0"
+VERSION = "1.1"
 DEFAULT = {
     "schema": 1,
     "mode": "source",
     "include": [],
+    "decisions": {},
     "exclude": [],
     "resources": [],
     "external": {},
@@ -19,7 +20,8 @@ DEFAULT = {
     "third_party": {},
     "reviewed_dynamic": {},
     "notebook_outputs": "strip",
-    "max_file_bytes": 16777216,
+    "max_file_bytes": None,
+    "max_scan_bytes": None,
 }
 
 
@@ -39,11 +41,21 @@ def load_policy(path=None, value=None):
             relative(s.replace("*", "glob").replace("?", "q"))
     if p["notebook_outputs"] not in ("strip", "preserve"):
         raise ReleaseError("Invalid Notebook policy")
-    if (
-        type(p["max_file_bytes"]) is not int
-        or not 1024 <= p["max_file_bytes"] <= 128 * 1024 * 1024
-    ):
-        raise ReleaseError("Invalid file scan limit")
+    for name in ("max_file_bytes", "max_scan_bytes"):
+        if p[name] is not None and (type(p[name]) is not int or p[name] < 1024):
+            raise ReleaseError("Invalid optional byte limit")
+    if not isinstance(p["decisions"], dict):
+        raise ReleaseError("Invalid reviewed decisions")
+    for name, decision in p["decisions"].items():
+        relative(name)
+        if (not isinstance(decision, dict) or set(decision) != {"action", "reason", "sha256"}
+                or decision["action"] not in ("include", "exclude", "review")
+                or not isinstance(decision["reason"], str) or not decision["reason"].strip()
+                or len(decision["reason"]) > 1000
+                or not isinstance(decision["sha256"], str)
+                or len(decision["sha256"]) != 64
+                or any(c not in "0123456789abcdef" for c in decision["sha256"])):
+            raise ReleaseError("Decisions require action, reason and exact file hash")
     for k in ("external", "dynamic_resources", "third_party", "reviewed_dynamic"):
         if not isinstance(p[k], dict):
             raise ReleaseError("Invalid policy mapping")

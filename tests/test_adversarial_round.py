@@ -180,15 +180,15 @@ class AdversarialTests(unittest.TestCase):
         import releasecraft.build as builder
         self.put("excluded.txt", "before")
         plan = self.plan(exclude=["excluded.txt"])
-        original = builder.read_safe
+        original = builder.copy_safe
 
-        def mutate(root, rel, limit):
-            result = original(root, rel, limit)
+        def mutate(root, rel, target, **kwargs):
+            result = original(root, rel, target, **kwargs)
             if rel == "main.py":
                 self.put("excluded.txt", "after!")
             return result
 
-        with patch.object(builder, "read_safe", side_effect=mutate):
+        with patch.object(builder, "copy_safe", side_effect=mutate):
             with self.assertRaises(ReleaseError):
                 assemble(self.source, plan, self.base / "out")
         self.assertFalse((self.base / "out").exists())
