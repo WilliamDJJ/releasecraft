@@ -101,6 +101,73 @@ class StreamingTests(unittest.TestCase):
         scanner.feed(b'password = "' + b'x' * (SCAN_WINDOW * 3) + b'"')
         self.assertTrue(scanner.finish())
 
+    def test_multiline_sensitive_syntax_cannot_fall_out_of_stream_windows(self):
+        cases = [
+            b'{"password":' + b'\n' * (SCAN_WINDOW * 2) + b'"synthetic-secret-123"}',
+            b'{"pass\\u0077ord"' + b'\r\n' * SCAN_WINDOW + b':"q"}',
+            b'password' + b'\t\n' * SCAN_WINDOW + b'= "synthetic-secret-123"',
+            b'{"db_password":' + b' \r\n' * SCAN_WINDOW + b'"q"}',
+            b'{"password":' + '\u2003\n'.encode('utf8') * SCAN_WINDOW + b'"synthetic-secret-123"}',
+            b'{"access_token":"' + b'x' * (SCAN_WINDOW * 2) + b'"}',
+        ]
+        for index, payload in enumerate(cases):
+            with self.subTest(case=index):
+                self.assertTrue(findings(payload))
+                for split in (1, 17, 4095):
+                    scanner = ContentScanner(PARSE_BYTES + 1)
+                    data = b'\x00' * (SCAN_WINDOW - split) + payload + b'\n'
+                    for offset in range(0, len(data), 8191):
+                        scanner.feed(data[offset:offset + 8191])
+                        self.assertLess(len(scanner.buffer), SCAN_WINDOW * 2)
+                    result = scanner.finish()
+                    self.assertTrue(result, (index, split))
+                    self.assertNotIn('synthetic-secret-123', json.dumps(result))
+
+    def test_large_completed_placeholder_does_not_need_unbounded_context(self):
+        for data in (b'{"password":"${LOCAL_VALUE}"}\n', b'{"password":null}\n', b'{"public":' + b'\n' * (SCAN_WINDOW * 2) + b'"value"}\n'):
+            scanner = ContentScanner(PARSE_BYTES + 1)
+            for offset in range(0, len(data), 8191):
+                scanner.feed(data[offset:offset + 8191])
+            self.assertEqual(scanner.finish(), [])
+
+    def test_real_large_multiline_credential_blocks_plan_build_verify_extract(self):
+        from releasecraft.build import MANIFEST
+        from releasecraft.safety import canonical
+
+        name = 'resource.dat'
+        path = self.put(name, b'public input')
+        good = analyze(self.root, {'resources': [name]})
+        self.assertEqual(good['status'], 'PLANNED')
+        assemble(self.root, good, self.base / 'clean')
+        prefix = b'{"password":' + b'\n' * (SCAN_WINDOW * 2) + b'"synthetic-secret-123"}\n'
+        payload = prefix + b'\n' * (PARSE_BYTES + 1 - len(prefix))
+        self.assertTrue(findings(payload))
+        path.write_bytes(payload)
+        for policy in ({'resources': [name]}, {'include': [name]}):
+            with self.subTest(policy=policy):
+                plan = analyze(self.root, policy)
+                self.assertEqual(plan['status'], 'BLOCKED')
+                row = next(r for r in plan['files'] if r['path'] == name)
+                self.assertEqual(row['reason'], 'sensitive-content')
+                self.assertNotIn('synthetic-secret-123', json.dumps(plan))
+                with self.assertRaises(ReleaseError):
+                    assemble(self.root, plan, self.base / 'unsafe')
+        forged = self.base / 'supplied.zip'
+        with zipfile.ZipFile(self.base / 'clean/release.zip') as src, zipfile.ZipFile(forged, 'w') as dst:
+            manifest = json.loads(src.read(MANIFEST))
+            row = next(r for r in manifest['files'] if r['path'] == name)
+            row.update(size=len(payload), sha256=hashlib.sha256(payload).hexdigest())
+            for info in src.infolist():
+                data = payload if info.filename == name else canonical(manifest) if info.filename == MANIFEST else src.read(info)
+                dst.writestr(info, data)
+        report = verify_archive(forged)
+        self.assertEqual(report['status'], 'FAILED')
+        self.assertIn('sensitive-content', [r['code'] for r in report['errors']])
+        self.assertNotIn('synthetic-secret-123', json.dumps(report))
+        with self.assertRaises(ReleaseError):
+            extract_verified(forged, self.base / 'unpacked')
+        self.assertFalse((self.base / 'unpacked').exists())
+
     def test_uncached_content_mutation_detected(self):
         path = self.root / 'records.csv'
         item = snapshot(self.root, 'records.csv', path.stat().st_size, cache=False)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import codecs
 import hashlib
 import json
 from pathlib import Path
@@ -77,11 +78,67 @@ class ContentScanner:
     """Small structured files keep existing exact checks; large payloads use windows.
 
     Overlapping windows cover split recognizers. An overlong unfinished text line
-    containing a sensitive recognizer prefix is conservatively blocked instead
-    of silently dropping unbounded match context. Large code/structured files
+    containing a sensitive recognizer prefix, or an unfinished credential
+    assignment across lines, is conservatively blocked instead of silently
+    dropping unbounded match context. Large code/structured files
     still need the separate parser gate; opaque resources have no size cap.
     """
     suspicious = re.compile(rb'(?i)(password|passwd|api[_-]?key|access[_-]?token|secret[_-]?key|_auth|://|PRIVATE KEY|gh[pousr]_|github_pat_|sk-|xox[baprs]-|/' + rb'Users/|/' + rb'home/|\\Users\\)')
+    credential_key = re.compile(r'(?i)(?:password|passwd|api[_-]?key|access[_-]?token|secret[_-]?key)\b')
+    json_string = re.compile(r'"(?:[^"\\\r\n]|\\.){0,512}"')
+    whitespace = re.compile(r'\s*')
+
+    @classmethod
+    def _unfinished_assignment(cls, text, end):
+        """Inspect one bounded suffix, including whitespace across newlines.
+
+        A dropped key with an unfinished separator/value could hide a later
+        secret. Do not retain arbitrary amounts of whitespace or string data.
+        Completed placeholders/non-string values remain for the normal checks.
+        """
+        if end < len(text) and text[end] in ('"', "'"):
+            end += 1
+        end = cls.whitespace.match(text, end).end()
+        if end == len(text):
+            return True
+        if text[end] not in (':', '='):
+            return False
+        end = cls.whitespace.match(text, end + 1).end()
+        if end == len(text):
+            return True
+        if text[end] not in ('"', "'"):
+            return False
+        quote = text[end]
+        end += 1
+        while end < len(text):
+            if text[end] == quote:
+                return False
+            end += 2 if text[end] == '\\' else 1
+        return True
+
+    def _context_guard(self, text, consumed, byte_count):
+        # Any unfinished context longer than the overlap would be discarded at
+        # this boundary. A conservative finding is safer than accepting a prefix
+        # whose value is outside the bounded window. Use Unicode whitespace as
+        # the full-file recognizers do, not only ASCII byte whitespace.
+        def discarded(start):
+            # Surrogate escape preserves invalid original bytes; character
+            # counts cannot locate a byte window boundary for Unicode text.
+            offset = len(text[:start].encode('utf8', errors='surrogateescape'))
+            return offset < consumed and byte_count - offset > SCAN_OVERLAP
+
+        for match in self.credential_key.finditer(text):
+            if self._unfinished_assignment(text, match.end()) and discarded(match.start()):
+                self.results.add(('stream-context-limit', self.line + text.count('\n', 0, match.start())))
+                return
+        for match in self.json_string.finditer(text):
+            try:
+                key = json.loads(match[0]).lower().replace('-', '_')
+            except ValueError:
+                continue
+            if key in ('password', 'passwd', 'api_key', 'access_token', 'secret_key', 'db_password') and self._unfinished_assignment(text, match.end()) and discarded(match.start()):
+                self.results.add(('stream-context-limit', self.line + text.count('\n', 0, match.start())))
+                return
 
     def __init__(self, size, python_source=False):
         self.small = size <= PARSE_BYTES
@@ -118,7 +175,11 @@ class ContentScanner:
                     break
             # Match quoted JSON key/value pairs without materializing the entire
             # object, including escaped keys and short credential values.
-            text = blob.decode('utf8', errors='replace')
+            # A window may end inside a multibyte whitespace character. Defer
+            # that partial character instead of inserting a non-whitespace
+            # replacement that would incorrectly terminate pending syntax.
+            text = codecs.getincrementaldecoder('utf8')(errors='surrogateescape').decode(blob, final=False)
+            self._context_guard(text, consumed, len(blob))
             for match in re.finditer(r'("(?:[^"\\]|\\.){0,512}")\s*:\s*("(?:[^"\\]|\\.){0,4096}")', text):
                 try:
                     key, value = json.loads(match[1]), json.loads(match[2])

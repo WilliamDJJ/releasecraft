@@ -166,6 +166,105 @@ class AgentHandoffTests(unittest.TestCase):
         self.assertTrue((Path(result['audit']) / 'plan.json').is_file())
         self.assertFalse(list((self.root / 'releasecraft-output').glob('release-*')))
 
+    def test_reviewed_binary_include_is_saved_and_published_exactly(self):
+        import zipfile
+
+        for number, name in enumerate(('screenshots/home.png', 'fixtures/input.bin', 'examples/resource.zip')):
+            with self.subTest(path=name):
+                payload = b'\x89PNG\x00public-fixture'
+                path = self.put(name, payload)
+                initial = analyze(self.root)
+                self.assertEqual(self.states(initial)[name], ('UNRESOLVED', 'binary-needs-classification'))
+                policy = decide(initial, review_policy(initial), name, 'include', 'Reviewed public fixture')
+                saved = self.base / ('policy-' + str(number) + '.json')
+                saved.write_bytes(canonical(policy))
+                reviewed = analyze(self.root, json.loads(saved.read_bytes()))
+                self.assertEqual(reviewed['status'], 'PLANNED')
+                self.assertEqual(self.states(reviewed)[name], ('INCLUDE', 'reviewed-include'))
+                output = self.base / ('binary-' + str(number))
+                self.assertEqual(assemble(self.root, reviewed, output)['status'], 'CANDIDATE')
+                with zipfile.ZipFile(output / 'release.zip') as archive:
+                    self.assertEqual(archive.read(name), payload)
+                self.assertEqual(path.read_bytes(), payload)
+                path.unlink()
+
+    def test_stale_binary_decisions_never_receive_dependency_approval(self):
+        self.put('reader.py', 'open("asset.bin", "rb").read()\n')
+        for action in ('include', 'exclude', 'review'):
+            with self.subTest(action=action):
+                path = self.put('asset.bin', b'\x00public-original')
+                initial = analyze(self.root)
+                policy = decide(initial, review_policy(initial), 'asset.bin', action, 'Recorded review decision')
+                path.write_bytes(b'\x00changed-payload')
+                changed = analyze(self.root, json.loads(canonical(policy)))
+                self.assertEqual(changed['status'], 'BLOCKED')
+                self.assertEqual(self.states(changed)['asset.bin'], ('UNRESOLVED', 'review-decision-stale'))
+                self.assertIn('dependency-not-included', [r['code'] for r in changed['blockers']])
+                with self.assertRaises(ReleaseError):
+                    assemble(self.root, changed, self.base / ('stale-' + action))
+
+    def test_explicit_binary_review_and_exclusion_block_required_resource(self):
+        self.put('reader.py', 'open("asset.bin", "rb").read()\n')
+        self.put('asset.bin', b'\x00public-original')
+        initial = analyze(self.root)
+        self.assertEqual(initial['status'], 'PLANNED')
+        for action, expected in (('exclude', ('EXCLUDE', 'reviewed-exclude')), ('review', ('UNRESOLVED', 'user-review-required'))):
+            with self.subTest(action=action):
+                policy = decide(initial, review_policy(initial), 'asset.bin', action, 'Requires a deliberate decision')
+                result = analyze(self.root, policy)
+                self.assertEqual(result['status'], 'BLOCKED')
+                self.assertEqual(self.states(result)['asset.bin'], expected)
+
+    def test_binary_review_cannot_override_secret_or_private_state(self):
+        name = 'screenshots/home.png'
+        self.put(name, b'\x89PNG\x00' + ('gh' + 'p_' + 'Q' * 30).encode())
+        initial = analyze(self.root)
+        self.assertEqual(self.states(initial)[name][1], 'sensitive-content')
+        with self.assertRaises(ReleaseError):
+            decide(initial, review_policy(initial), name, 'include', 'Cannot approve a secret')
+        policy = review_policy(initial)
+        policy['decisions'][name] = {'action': 'include', 'reason': 'Manual policy cannot bypass scanning', 'sha256': next(r['sha256'] for r in initial['files'] if r['path'] == name)}
+        result = analyze(self.root, policy)
+        self.assertEqual(result['status'], 'BLOCKED')
+        self.assertEqual(self.states(result)[name][1], 'sensitive-content')
+        self.put('.codex/auth.json', b'\x00local-state')
+        private = analyze(self.root)
+        with self.assertRaises(ReleaseError):
+            decide(private, review_policy(private), '.codex/auth.json', 'include', 'Cannot approve private state')
+
+    def test_reviewed_binary_cli_plan_export_replay_and_mutation(self):
+        import os
+        import subprocess
+        import sys
+
+        name = 'screenshots/home.png'
+        path = self.put(name, b'\x89PNG\x00public-fixture')
+        initial = analyze(self.root)
+        policy = decide(initial, review_policy(initial), name, 'include', 'Reviewed public screenshot for documentation')
+        saved = self.base / 'reviewed.json'
+        saved.write_bytes(canonical(policy))
+        env = dict(os.environ, PYTHONNOUSERSITE='1', PYTHONDONTWRITEBYTECODE='1')
+        env.pop('PYTHONPATH', None)
+
+        def cli(args, expected):
+            result = subprocess.run([sys.executable, '-m', 'releasecraft', *map(str, args)], env=env, capture_output=True, timeout=30)
+            self.assertEqual(result.returncode, expected, result.stderr.decode('utf8', errors='replace'))
+            return json.loads(result.stdout)
+
+        work = self.base / 'first work'
+        self.assertEqual(cli(['plan', self.root, '--config', saved, '--work', work], 0)['status'], 'PLANNED')
+        exported = self.base / 'exported.json'
+        self.assertEqual(cli(['review-policy', work / 'plan.json', '--output', exported], 0)['status'], 'EXPORTED')
+        self.assertEqual(json.loads(exported.read_bytes()), policy)
+        replay = self.base / 'replay work'
+        cli(['plan', self.root, '--config', exported, '--work', replay], 0)
+        self.assertEqual((work / 'plan.json').read_bytes(), (replay / 'plan.json').read_bytes())
+        cli(['build', self.root, '--plan', replay / 'plan.json', '--output', self.base / 'built'], 3)
+        path.write_bytes(b'\x89PNG\x00changed-payload')
+        blocked = cli(['plan', self.root, '--config', exported, '--work', self.base / 'changed'], 2)
+        self.assertEqual(blocked['status'], 'BLOCKED')
+        self.assertIn('review-decision-stale', [r['code'] for r in blocked['blocker_summary']['groups']])
+
 
 if __name__ == '__main__':
     unittest.main()

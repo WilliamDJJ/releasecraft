@@ -195,14 +195,23 @@ class UpgradeAdversarialTests(unittest.TestCase):
 @unittest.skipUnless(os.name == 'nt' or os.environ.get('DISPLAY'), 'Native Tk display required')
 class ReviewDesktopTests(unittest.TestCase):
     def test_pending_decisions_survive_language_switch_export_and_reanalysis(self):
+        self.check_review_persistence('config.json', b'{}')
+
+    def test_binary_review_survives_gui_save_language_switch_and_reanalysis(self):
+        self.check_review_persistence('screenshots/home.png', b'\x89PNG\x00public-screenshot')
+
+    def check_review_persistence(self, reviewed_path, payload):
         import tkinter as tk
         from releasecraft.desktop import App
         with tempfile.TemporaryDirectory() as temp:
             base = Path(temp)
             source = base/'source 空间'
             source.mkdir()
-            for name, data in {'LICENSE':'MIT License\nPermission is hereby granted\n', 'README.md':'# Fixture\n', 'main.py':'print("fixture")\n', 'config.json':'{}'}.items():
+            for name, data in {'LICENSE':'MIT License\nPermission is hereby granted\n', 'README.md':'# Fixture\n', 'main.py':'print("fixture")\n'}.items():
                 (source/name).write_text(data, encoding='utf8')
+            resource = source / reviewed_path
+            resource.parent.mkdir(parents=True, exist_ok=True)
+            resource.write_bytes(payload)
             root = tk.Tk()
             root.withdraw()
             app = App(root, source=str(source), state=base/'state')
@@ -213,7 +222,7 @@ class ReviewDesktopTests(unittest.TestCase):
                 panel = app.review_window
                 from tkinter import font as tkfont
                 self.assertGreater(panel.table.column('state', 'minwidth'), tkfont.nametofont('TkDefaultFont').measure('UNRESOLVED'))
-                key = next(k for k, row in panel.rows.items() if row['path']=='config.json')
+                key = next(k for k, row in panel.rows.items() if row['path']==reviewed_path)
                 panel.table.selection_set(key)
                 panel.reason.set('Reviewed public configuration')
                 panel.apply('include')
@@ -231,7 +240,11 @@ class ReviewDesktopTests(unittest.TestCase):
                 self.assertEqual(app.policy_path.get(), str(path))
                 rerun = prepare(source, policy=json.loads(saved), operation=Operation(state_directory=base/'state'), review_only=True)
                 self.assertEqual(rerun['status'], 'PLANNED', rerun.get('problems'))
-                self.assertEqual((source/'config.json').read_text(), '{}')
+                self.assertEqual(resource.read_bytes(), payload)
+                published = prepare(source, policy=json.loads(saved), operation=Operation(state_directory=base/'state'))
+                self.assertEqual(published['status'], 'CANDIDATE')
+                with zipfile.ZipFile(Path(published['output']) / 'release.zip') as archive:
+                    self.assertEqual(archive.read(reviewed_path), payload)
                 with patch('releasecraft.review_ui.filedialog.asksaveasfilename', return_value=str(path)), patch('releasecraft.review_ui.messagebox.showerror') as rejected:
                     panel.save()
                     rejected.assert_called_once()

@@ -992,7 +992,8 @@ def analyze(source, policy=None, *, operation=None):
                 and (item.binary if transformed is data else b"\x00" in transformed)
                 and path not in policy["resources"]
                 and reason not in (
-                    "sensitive-content", "third-party-provenance", "npm-config-needs-review", "agent-config-needs-review", "playwright-baseline-input"
+                    "sensitive-content", "third-party-provenance", "npm-config-needs-review", "agent-config-needs-review", "playwright-baseline-input",
+                    "reviewed-include", "review-decision-stale", "user-review-required"
                 )
             ):
                 state = "UNRESOLVED"
@@ -1046,6 +1047,9 @@ def analyze(source, policy=None, *, operation=None):
                     target = by_path[e["target"]]
                     if (
                         (target["state"] == "UNRESOLVED" or (target["state"] == "EXCLUDE" and target["reason"] == "transient-artifact"))
+                        # Dependencies establish necessity, never approval of an
+                        # explicit decision or of bytes changed since review.
+                        and target.get("decision") is None
                         and (
                             target["reason"] == "transient-artifact"
                             or
